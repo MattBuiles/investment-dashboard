@@ -6,10 +6,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(value: number, currency = "USD") {
+  const zeroDecimal = new Set(["COP", "CLP", "JPY", "KRW", "VND", "ISK", "HUF"]);
+  const fractionDigits = zeroDecimal.has(currency.toUpperCase()) ? 0 : 2;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(value);
 }
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -10,12 +11,14 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
 
   const { data: connection } = await supabase
-    .from("ibkr_connection_status")
-    .select("connected_at, session_active")
+    .from("broker_connections")
+    .select("id, label, last_synced_at, last_sync_status")
+    .eq("broker_kind", "ibkr_flex")
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  const isConnected = Boolean(connection?.connected_at);
-  const sessionLive = Boolean(connection?.session_active);
+  const isConnected = Boolean(connection?.id);
 
   return (
     <div className="px-6 py-8 md:px-10 md:py-12 space-y-6 max-w-3xl">
@@ -37,19 +40,16 @@ export default async function SettingsPage() {
         <CardContent className="pt-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-medium">Interactive Brokers</h2>
+              <h2 className="text-base font-medium">Interactive Brokers (Flex)</h2>
               <p className="mt-1 text-sm text-[var(--muted)]">
-                Connect via OAuth (Third Party). Once connected, positions sync
-                automatically.
+                Token cifrado via Supabase Vault. Sync read-only de posiciones.
               </p>
             </div>
             <div className="flex items-center gap-1.5 text-xs">
               {isConnected ? (
                 <>
                   <CheckCircle2 className="size-4 text-[var(--positive)]" />
-                  <span className="text-[var(--positive)]">
-                    {sessionLive ? "Live session" : "Connected"}
-                  </span>
+                  <span className="text-[var(--positive)]">Connected</span>
                 </>
               ) : (
                 <>
@@ -60,15 +60,21 @@ export default async function SettingsPage() {
             </div>
           </div>
 
-          {isConnected ? (
-            <Button variant="secondary" size="sm" disabled>
-              Manage connection (coming soon)
-            </Button>
-          ) : (
-            <Button variant="secondary" size="sm" disabled>
-              Connect IBKR (coming soon)
-            </Button>
+          {isConnected && connection && (
+            <p className="text-xs text-[var(--muted)]">
+              {connection.label} ·{" "}
+              {connection.last_synced_at
+                ? `última sync ${new Date(connection.last_synced_at).toLocaleString()}`
+                : "nunca sincronizado"}
+            </p>
           )}
+
+          <Link
+            href="/stocks"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--border)] px-3 py-2 text-sm font-medium hover:bg-[var(--surface-2)]"
+          >
+            {isConnected ? "Manage in Stocks" : "Connect IBKR in Stocks"}
+          </Link>
         </CardContent>
       </Card>
     </div>

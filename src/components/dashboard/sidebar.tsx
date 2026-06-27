@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Wallet,
-  Briefcase,
+  Landmark,
+  LineChart,
+  Sparkles,
   Settings,
   TrendingUp,
 } from "lucide-react";
@@ -14,8 +15,9 @@ import { SignOutButton } from "./sign-out-button";
 
 const nav = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
-  { href: "/holdings", label: "Holdings", icon: Briefcase },
-  { href: "/accounts", label: "Accounts", icon: Wallet },
+  { href: "/cdts", label: "CDTs", icon: Landmark },
+  { href: "/stocks", label: "Stocks", icon: LineChart },
+  { href: "/custom", label: "Custom", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

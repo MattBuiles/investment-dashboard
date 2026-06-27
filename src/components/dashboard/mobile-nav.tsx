@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Wallet, Briefcase, Settings } from "lucide-react";
+import { LayoutDashboard, Landmark, LineChart, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
-  { href: "/holdings", label: "Holdings", icon: Briefcase },
-  { href: "/accounts", label: "Accounts", icon: Wallet },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/cdts", label: "CDTs", icon: Landmark },
+  { href: "/stocks", label: "Stocks", icon: LineChart },
+  { href: "/custom", label: "Custom", icon: Sparkles },
 ];
 
 export function MobileNav() {

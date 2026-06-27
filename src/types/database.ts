@@ -66,6 +66,81 @@ export type Database = {
         }
         Relationships: []
       }
+      broker_connections: {
+        Row: {
+          account_id: string | null
+          broker_kind: Database["public"]["Enums"]["broker_kind"]
+          created_at: string
+          flex_query_id: string | null
+          id: string
+          label: string
+          last_sync_error: string | null
+          last_sync_status: string | null
+          last_synced_at: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+          vault_secret_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          broker_kind: Database["public"]["Enums"]["broker_kind"]
+          created_at?: string
+          flex_query_id?: string | null
+          id?: string
+          label: string
+          last_sync_error?: string | null
+          last_sync_status?: string | null
+          last_synced_at?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+          vault_secret_id: string
+        }
+        Update: {
+          account_id?: string | null
+          broker_kind?: Database["public"]["Enums"]["broker_kind"]
+          created_at?: string
+          flex_query_id?: string | null
+          id?: string
+          label?: string
+          last_sync_error?: string | null
+          last_sync_status?: string | null
+          last_synced_at?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+          vault_secret_id?: string
+        }
+        Relationships: []
+      }
+      broker_secret_access_log: {
+        Row: {
+          action: Database["public"]["Enums"]["broker_secret_action"]
+          connection_id: string | null
+          created_at: string
+          id: string
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["broker_secret_action"]
+          connection_id?: string | null
+          created_at?: string
+          id?: string
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["broker_secret_action"]
+          connection_id?: string | null
+          created_at?: string
+          id?: string
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       holdings: {
         Row: {
           account_id: string
@@ -106,44 +181,6 @@ export type Database = {
           last_price_at?: string | null
           quantity?: number
           symbol?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "holdings_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ibkr_credentials: {
-        Row: {
-          connected_at: string
-          live_session_token: string | null
-          live_session_token_expires_at: string | null
-          oauth_token: string
-          oauth_token_secret: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          connected_at?: string
-          live_session_token?: string | null
-          live_session_token_expires_at?: string | null
-          oauth_token: string
-          oauth_token_secret: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          connected_at?: string
-          live_session_token?: string | null
-          live_session_token_expires_at?: string | null
-          oauth_token?: string
-          oauth_token_secret?: string
           updated_at?: string
           user_id?: string
         }
@@ -201,15 +238,7 @@ export type Database = {
           total_value?: number
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "snapshots_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       transactions: {
         Row: {
@@ -257,43 +286,44 @@ export type Database = {
           symbol?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Views: {
-      ibkr_connection_status: {
-        Row: {
-          connected_at: string | null
-          session_active: boolean | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          connected_at?: string | null
-          session_active?: never
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          connected_at?: string | null
-          session_active?: never
-          updated_at?: string | null
-          user_id?: string | null
-        }
         Relationships: []
       }
     }
-    Functions: { [_ in never]: never }
+    Views: { [_ in never]: never }
+    Functions: {
+      delete_broker_connection: {
+        Args: { p_connection_id: string }
+        Returns: undefined
+      }
+      get_broker_secret: { Args: { p_connection_id: string }; Returns: string }
+      mark_broker_sync: {
+        Args: { p_connection_id: string; p_error: string; p_status: string }
+        Returns: undefined
+      }
+      save_broker_connection: {
+        Args: {
+          p_broker_kind: Database["public"]["Enums"]["broker_kind"]
+          p_flex_query_id: string
+          p_label: string
+          p_secret_text: string
+          p_token_expires_at?: string
+        }
+        Returns: string
+      }
+      update_broker_connection_secret: {
+        Args: {
+          p_connection_id: string
+          p_flex_query_id: string
+          p_secret_text: string
+          p_token_expires_at?: string
+        }
+        Returns: undefined
+      }
+    }
     Enums: {
       account_kind: "cdt" | "brokerage" | "custom"
+      broker_kind: "ibkr_flex"
+      broker_secret_action: "create" | "read" | "update" | "delete"
       transaction_kind:
         | "buy"
         | "sell"
