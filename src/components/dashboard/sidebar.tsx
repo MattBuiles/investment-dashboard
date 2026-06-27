@@ -10,6 +10,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SignOutButton } from "./sign-out-button";
 
 const nav = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
@@ -18,7 +19,7 @@ const nav = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+export function Sidebar({ userEmail }: { userEmail?: string }) {
   const pathname = usePathname();
 
   return (
@@ -28,7 +29,7 @@ export function Sidebar() {
         <span className="font-semibold tracking-tight">Investments</span>
       </Link>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-1 flex-col gap-1">
         {nav.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href);
           return (
@@ -48,6 +49,15 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      <div className="mt-6 border-t border-[var(--border)] pt-4">
+        {userEmail && (
+          <p className="px-3 pb-2 text-xs text-[var(--muted)] truncate">
+            {userEmail}
+          </p>
+        )}
+        <SignOutButton />
+      </div>
     </aside>
   );
 }
