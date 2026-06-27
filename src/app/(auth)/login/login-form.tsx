@@ -1,101 +1,64 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { signIn, signUp, type AuthState } from "./actions";
+import { signInWithGoogle } from "./actions";
 
-type Mode = "signin" | "signup";
-
-export function LoginForm() {
-  const [mode, setMode] = useState<Mode>("signin");
-  const action = mode === "signin" ? signIn : signUp;
-  const [state, formAction, pending] = useActionState<AuthState, FormData>(
-    action,
-    undefined
+function GoogleIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      className="size-5"
+    >
+      <path
+        d="M21.6 12.227c0-.71-.064-1.39-.182-2.045H12v3.868h5.382a4.6 4.6 0 0 1-1.995 3.018v2.51h3.227c1.89-1.74 2.986-4.302 2.986-7.351Z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 22c2.7 0 4.964-.895 6.614-2.422l-3.227-2.51c-.895.6-2.04.955-3.387.955-2.605 0-4.81-1.76-5.6-4.123H3.064v2.59A9.997 9.997 0 0 0 12 22Z"
+        fill="#34A853"
+      />
+      <path
+        d="M6.4 13.9a6.013 6.013 0 0 1 0-3.8V7.51H3.064a10 10 0 0 0 0 8.98L6.4 13.9Z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.977c1.468 0 2.787.505 3.823 1.495l2.864-2.864C16.96 3.045 14.695 2 12 2A9.997 9.997 0 0 0 3.064 7.51L6.4 10.1C7.19 7.736 9.395 5.977 12 5.977Z"
+        fill="#EA4335"
+      />
+    </svg>
   );
+}
 
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant="secondary" size="lg" className="w-full" disabled={pending}>
+      <GoogleIcon />
+      {pending ? "Redirecting…" : "Continue with Google"}
+    </Button>
+  );
+}
+
+export function LoginForm({ error }: { error?: string }) {
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-tight">
-        {mode === "signin" ? "Sign in" : "Create account"}
-      </h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
       <p className="mt-2 text-sm text-[var(--muted)]">
-        {mode === "signin"
-          ? "Use your account to access the dashboard."
-          : "Set up a new dashboard account."}
+        Use your Google account to access the dashboard.
       </p>
 
-      <form action={formAction} className="mt-8 space-y-4">
-        <div>
-          <label htmlFor="email" className="text-sm font-medium">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            className="mt-1 block w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm focus:border-[var(--accent)] focus:outline-none"
-            placeholder="you@example.com"
-          />
-        </div>
-        <div>
-          <label htmlFor="password" className="text-sm font-medium">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
-            minLength={mode === "signup" ? 8 : undefined}
-            className="mt-1 block w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm focus:border-[var(--accent)] focus:outline-none"
-            placeholder="••••••••"
-          />
-        </div>
-
-        {state?.error && (
-          <p className="text-sm text-[var(--negative)]">{state.error}</p>
-        )}
-        {state?.message && (
-          <p className="text-sm text-[var(--positive)]">{state.message}</p>
-        )}
-
-        <Button type="submit" className="w-full" size="lg" disabled={pending}>
-          {pending
-            ? "Loading…"
-            : mode === "signin"
-              ? "Sign in"
-              : "Create account"}
-        </Button>
+      <form action={signInWithGoogle} className="mt-8">
+        <SubmitButton />
       </form>
 
-      <p className="mt-6 text-center text-sm text-[var(--muted)]">
-        {mode === "signin" ? (
-          <>
-            Don&apos;t have an account?{" "}
-            <button
-              type="button"
-              className="font-medium text-[var(--foreground)] underline-offset-4 hover:underline"
-              onClick={() => setMode("signup")}
-            >
-              Sign up
-            </button>
-          </>
-        ) : (
-          <>
-            Already have an account?{" "}
-            <button
-              type="button"
-              className="font-medium text-[var(--foreground)] underline-offset-4 hover:underline"
-              onClick={() => setMode("signin")}
-            >
-              Sign in
-            </button>
-          </>
-        )}
+      {error && (
+        <p className="mt-4 text-center text-sm text-[var(--negative)]">{error}</p>
+      )}
+
+      <p className="mt-8 text-center text-xs text-[var(--muted)]">
+        By signing in you agree to keep an eye on your portfolio responsibly.
       </p>
     </>
   );
