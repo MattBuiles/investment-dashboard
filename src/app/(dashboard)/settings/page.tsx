@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { CheckCircle2, AlertCircle } from "lucide-react";
+import { ProfileForm } from "./profile-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -10,14 +10,23 @@ export default async function SettingsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: connection } = await supabase
-    .from("broker_connections")
-    .select("id, label, last_synced_at, last_sync_status")
-    .eq("broker_kind", "ibkr_flex")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [profileRes, connectionRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("base_currency, display_name")
+      .eq("id", user?.id ?? "")
+      .maybeSingle(),
+    supabase
+      .from("broker_connections")
+      .select("id, label, last_synced_at, last_sync_status")
+      .eq("broker_kind", "ibkr_flex")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
+  const profile = profileRes.data ?? { base_currency: "USD", display_name: null };
+  const connection = connectionRes.data;
   const isConnected = Boolean(connection?.id);
 
   return (
@@ -33,6 +42,13 @@ export default async function SettingsPage() {
         <CardContent className="pt-6 space-y-2">
           <h2 className="text-base font-medium">Account</h2>
           <p className="text-sm text-[var(--muted)]">{user?.email}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <h2 className="text-base font-medium">Perfil</h2>
+          <ProfileForm initial={profile} />
         </CardContent>
       </Card>
 
