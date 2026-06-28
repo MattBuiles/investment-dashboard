@@ -1,4 +1,5 @@
 import type { Tables } from "@/types/database";
+import { convertAmount, type FxRates } from "./fx";
 
 export type Account = Tables<"accounts">;
 export type Holding = Tables<"holdings">;
@@ -21,6 +22,29 @@ export function accountValue(account: Account, holdings: Holding[]): number {
       .reduce((sum, h) => sum + holdingMarketValue(h), 0);
   }
   return Number(account.principal ?? 0);
+}
+
+export function accountValueIn(
+  account: Account,
+  holdings: Holding[],
+  toCurrency: string,
+  fx: FxRates
+): number {
+  if (account.kind === "brokerage") {
+    return holdings
+      .filter((h) => h.account_id === account.id)
+      .reduce(
+        (sum, h) =>
+          sum + convertAmount(holdingMarketValue(h), h.currency, toCurrency, fx),
+        0
+      );
+  }
+  return convertAmount(
+    Number(account.principal ?? 0),
+    account.currency,
+    toCurrency,
+    fx
+  );
 }
 
 export function buildAllocation(

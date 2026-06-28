@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
 import { AddCdtToggle } from "./add-cdt-toggle";
 import { CdtRow } from "./cdt-row";
+import { MarketRatesSection } from "./market-rates";
 
 export default async function CdtsPage() {
   const supabase = await createClient();
@@ -84,6 +85,8 @@ export default async function CdtsPage() {
           </CardContent>
         </Card>
       )}
+
+      <MarketRatesSection />
     </div>
   );
 }

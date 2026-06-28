@@ -5,11 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import {
-  accountValue,
+  accountValueIn,
   type Account,
   type Holding,
 } from "@/lib/portfolio";
 import { takeDailySnapshot } from "@/lib/snapshots";
+import { fetchFxRates } from "@/lib/fx";
 import { PortfolioChart } from "./portfolio-chart";
 
 type CategoryKey = "cdt" | "brokerage" | "custom";
@@ -43,13 +44,16 @@ export default async function OverviewPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [accountsRes, holdingsRes] = await Promise.all([
+  const [accountsRes, holdingsRes, profileRes, fx] = await Promise.all([
     supabase.from("accounts").select("*"),
     supabase.from("holdings").select("*"),
+    supabase.from("profiles").select("base_currency").maybeSingle(),
+    fetchFxRates(),
   ]);
 
   const accounts: Account[] = accountsRes.data ?? [];
   const holdings: Holding[] = holdingsRes.data ?? [];
+  const baseCurrency = profileRes.data?.base_currency ?? "USD";
 
   if (user) {
     await takeDailySnapshot(supabase, user.id);
@@ -72,7 +76,10 @@ export default async function OverviewPage() {
   const byKind = (k: CategoryKey) => accounts.filter((a) => a.kind === k);
 
   const sumKind = (k: CategoryKey) =>
-    byKind(k).reduce((s, a) => s + accountValue(a, holdings), 0);
+    byKind(k).reduce(
+      (s, a) => s + accountValueIn(a, holdings, baseCurrency, fx),
+      0
+    );
 
   const cdtTotal = sumKind("cdt");
   const stockTotal = sumKind("brokerage");
@@ -125,14 +132,14 @@ export default async function OverviewPage() {
       </header>
 
       <GlassCard className="p-8">
-        <p className="text-sm text-[var(--muted)]">Total portfolio value</p>
+        <p className="text-sm text-[var(--muted)]">Total portfolio value ({baseCurrency})</p>
         <p className="mt-2 text-4xl font-semibold tabular-nums">
-          {formatCurrency(grandTotal)}
+          {formatCurrency(grandTotal, baseCurrency)}
         </p>
         <p className="mt-3 text-xs text-[var(--muted)]">
           {accounts.length === 0
             ? "Start by adding a CDT, stock, or custom asset"
-            : `Across ${accounts.length} ${accounts.length === 1 ? "account" : "accounts"}`}
+            : `Across ${accounts.length} ${accounts.length === 1 ? "account" : "accounts"} · FX ${fx.asOf ? `as of ${fx.asOf.slice(5, 16)}` : "unavailable"}`}
         </p>
       </GlassCard>
 
@@ -159,7 +166,7 @@ export default async function OverviewPage() {
 
                 <p className="mt-5 text-sm text-[var(--muted)]">{c.title}</p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums">
-                  {formatCurrency(c.total)}
+                  {formatCurrency(c.total, baseCurrency)}
                 </p>
 
                 <div className="mt-4 flex items-center justify-between text-xs text-[var(--muted)]">
