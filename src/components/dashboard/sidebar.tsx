@@ -9,15 +9,26 @@ import {
   Sparkles,
   Settings,
   TrendingUp,
+  Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "./sign-out-button";
+
+// market-agent (app hermana de análisis/decisión). URL por env, con fallback.
+const MARKET_AGENT_URL =
+  process.env.NEXT_PUBLIC_MARKET_AGENT_URL ?? "http://localhost:3001/opportunities";
 
 const nav = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
   { href: "/cdts", label: "CDTs", icon: Landmark },
   { href: "/stocks", label: "Stocks", icon: LineChart },
   { href: "/custom", label: "Custom", icon: Sparkles },
+  {
+    href: MARKET_AGENT_URL,
+    label: "Oportunidades",
+    icon: Compass,
+    external: true,
+  },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -32,12 +43,14 @@ export function Sidebar({ userEmail }: { userEmail?: string }) {
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1">
-        {nav.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href);
+        {nav.map(({ href, label, icon: Icon, external }) => {
+          const active = !external && pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
+              target={external ? "_blank" : undefined}
+              rel={external ? "noopener noreferrer" : undefined}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                 active
