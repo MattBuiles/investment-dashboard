@@ -19,10 +19,42 @@ export function IbkrConnectForm({ onDone }: { onDone?: () => void }) {
 
   return (
     <form action={formAction} className="space-y-4">
-      <p className="text-xs text-[var(--muted)]">
-        En IBKR Client Portal → Settings → Account Settings → Flex Web Service.
-        Genera un token y un Flex Query (positions). El token NUNCA se muestra de nuevo.
-      </p>
+      <details className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-xs text-[var(--muted)]">
+        <summary className="cursor-pointer font-medium text-[var(--foreground)]">
+          ¿Cómo activar Flex y obtener el token + Query ID?
+        </summary>
+        <ol className="mt-3 list-decimal space-y-1.5 pl-4">
+          <li>
+            IBKR Client Portal → <b>Performance &amp; Reports → Flex Queries</b>.
+          </li>
+          <li>
+            Crea un <b>Activity Flex Query</b> e incluye la sección{" "}
+            <b>Open Positions</b> con los campos: Symbol, Quantity (position),
+            Cost Basis Price, Mark Price, Currency, Asset Class y Conid.
+            Formato: <b>XML</b>. Guarda la query.
+          </li>
+          <li>
+            Copia el <b>Query ID</b> (icono ℹ️ Info a la izquierda de la query).
+          </li>
+          <li>
+            En la misma página, sección <b>Flex Web Service Configuration</b> →
+            icono Configurar → marca <b>Flex Web Service Status</b> → Save.
+          </li>
+          <li>
+            <b>Generate a New Token</b> → elige expiración (hasta 1 año) →{" "}
+            <b>copia el token de inmediato</b> (no se vuelve a mostrar).
+          </li>
+          <li>Pega el Query ID y el token aquí abajo.</li>
+        </ol>
+        <a
+          href="https://www.ibkrguides.com/clientportal/performanceandstatements/flex-web-service.htm"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-block text-[var(--accent)] hover:underline"
+        >
+          Guía oficial de IBKR ↗
+        </a>
+      </details>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
