@@ -10,6 +10,7 @@ import {
 import { AddBrokerToggle } from "./add-broker-toggle";
 import { BrokerSection } from "./broker-section";
 import { IbkrConnectionCard } from "./ibkr-connection-card";
+import type { AgentSignal } from "@/lib/agent-signals";
 
 export default async function StocksPage() {
   const supabase = await createClient();
@@ -34,6 +35,15 @@ export default async function StocksPage() {
   const brokers: Account[] = brokersRes.data ?? [];
   const holdings: Holding[] = holdingsRes.data ?? [];
   const connection = connectionRes.data ?? null;
+
+  // Señales de market-agent (Supabase compartido) por símbolo.
+  const symbols = [...new Set(holdings.map((h) => h.symbol))];
+  const signalsRes = symbols.length
+    ? await supabase.from("ma_signals").select("*").in("ticker", symbols)
+    : { data: [] };
+  const signals: Record<string, AgentSignal> = Object.fromEntries(
+    (signalsRes.data ?? []).map((s: AgentSignal) => [s.ticker, s])
+  );
 
   const total = holdings
     .filter((h) => brokers.some((b) => b.id === h.account_id))
@@ -83,6 +93,7 @@ export default async function StocksPage() {
                 currency: b.currency,
               }}
               holdings={holdings.filter((h) => h.account_id === b.id)}
+              signals={signals}
             />
           ))}
         </div>

@@ -9,6 +9,8 @@ import { holdingMarketValue, type Holding } from "@/lib/portfolio";
 import { HoldingForm } from "./holding-form";
 import { BrokerForm } from "./broker-form";
 import { deleteHolding, deleteBroker } from "./actions";
+import { AgentSignalChip } from "@/components/agent-signal-chip";
+import type { AgentSignal } from "@/lib/agent-signals";
 
 type Broker = {
   id: string;
@@ -20,9 +22,11 @@ type Broker = {
 export function BrokerSection({
   broker,
   holdings,
+  signals = {},
 }: {
   broker: Broker;
   holdings: Holding[];
+  signals?: Record<string, AgentSignal>;
 }) {
   const [adding, setAdding] = useState(false);
   const [editingBroker, setEditingBroker] = useState(false);
@@ -110,7 +114,10 @@ export function BrokerSection({
               return (
                 <li key={h.id} className="flex items-center gap-3 py-3">
                   <div className="flex-1">
-                    <p className="font-medium">{h.symbol}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{h.symbol}</p>
+                      <AgentSignalChip symbol={h.symbol} signal={signals[h.symbol]} />
+                    </div>
                     <p className="text-xs text-[var(--muted)]">
                       {Number(h.quantity).toLocaleString()} @ {formatCurrency(Number(h.avg_cost), h.currency)}
                     </p>

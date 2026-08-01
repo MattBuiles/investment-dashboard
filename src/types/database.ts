@@ -141,6 +141,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ma_signals: {
+        Row: {
+          ticker: string
+          name: string | null
+          price: number | null
+          score: number | null
+          classification: string | null
+          regime: string | null
+          valuation_verdict: string | null
+          upside_pct: number | null
+          updated_at: string
+        }
+        Insert: {
+          ticker: string
+          name?: string | null
+          price?: number | null
+          score?: number | null
+          classification?: string | null
+          regime?: string | null
+          valuation_verdict?: string | null
+          upside_pct?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ticker?: string
+          name?: string | null
+          price?: number | null
+          score?: number | null
+          classification?: string | null
+          regime?: string | null
+          valuation_verdict?: string | null
+          upside_pct?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       holdings: {
         Row: {
           account_id: string
