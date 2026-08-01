@@ -22,6 +22,10 @@ function origin(): string {
   }
 }
 
+export function marketAgentUrl(path = ""): string {
+  return `${origin()}${path}`;
+}
+
 export function marketAgentAssetUrl(symbol: string): string {
   return `${origin()}/asset/${encodeURIComponent(symbol)}`;
 }

@@ -18,6 +18,14 @@ import { SignOutButton } from "./sign-out-button";
 const MARKET_AGENT_URL =
   process.env.NEXT_PUBLIC_MARKET_AGENT_URL ?? "http://localhost:3001/opportunities";
 
+function marketAgentOrigin(): string {
+  try {
+    return new URL(MARKET_AGENT_URL).origin;
+  } catch {
+    return "http://localhost:3001";
+  }
+}
+
 const nav = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
   { href: "/cdts", label: "CDTs", icon: Landmark },
@@ -37,10 +45,23 @@ export function Sidebar({ userEmail }: { userEmail?: string }) {
 
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-[var(--border)] bg-[var(--surface)] px-4 py-6">
-      <Link href="/overview" className="flex items-center gap-2 px-3 mb-8">
+      <Link href="/overview" className="flex items-center gap-2 px-3 mb-4">
         <TrendingUp className="size-5 text-[var(--accent)]" />
         <span className="font-semibold tracking-tight">Investments</span>
       </Link>
+
+      {/* Switcher entre las dos apps hermanas */}
+      <div className="mb-6 flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5 text-xs">
+        <span className="flex-1 rounded-md bg-[var(--surface)] px-2 py-1.5 text-center font-medium">
+          Rastreo
+        </span>
+        <a
+          href={`${marketAgentOrigin()}/`}
+          className="flex-1 px-2 py-1.5 text-center text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+        >
+          Análisis ↗
+        </a>
+      </div>
 
       <nav className="flex flex-1 flex-col gap-1">
         {nav.map(({ href, label, icon: Icon, external }) => {

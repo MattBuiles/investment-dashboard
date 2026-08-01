@@ -12,6 +12,8 @@ import {
 import { takeDailySnapshot } from "@/lib/snapshots";
 import { fetchFxRates } from "@/lib/fx";
 import { PortfolioChart } from "./portfolio-chart";
+import { AgentSignalChip } from "@/components/agent-signal-chip";
+import { marketAgentUrl, type AgentSignal } from "@/lib/agent-signals";
 
 type CategoryKey = "cdt" | "brokerage" | "custom";
 
@@ -54,6 +56,13 @@ export default async function OverviewPage() {
   const accounts: Account[] = accountsRes.data ?? [];
   const holdings: Holding[] = holdingsRes.data ?? [];
   const baseCurrency = profileRes.data?.base_currency ?? "USD";
+
+  // Señales de market-agent para tus posiciones (Supabase compartido).
+  const heldSymbols = [...new Set(holdings.map((h) => h.symbol))];
+  const agentSignalsRes = heldSymbols.length
+    ? await supabase.from("ma_signals").select("*").in("ticker", heldSymbols)
+    : { data: [] };
+  const agentSignals = (agentSignalsRes.data ?? []) as AgentSignal[];
 
   if (user) {
     await takeDailySnapshot(supabase, user.id);
@@ -142,6 +151,33 @@ export default async function OverviewPage() {
             : `Across ${accounts.length} ${accounts.length === 1 ? "account" : "accounts"} · FX ${fx.asOf ? `as of ${fx.asOf.slice(5, 16)}` : "unavailable"}`}
         </p>
       </GlassCard>
+
+      {agentSignals.length > 0 && (
+        <GlassCard className="p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">Señales del agente</p>
+              <p className="text-xs text-[var(--muted)]">
+                Opinión de market-agent sobre tus posiciones
+              </p>
+            </div>
+            <a
+              href={marketAgentUrl("/")}
+              className="text-sm text-[var(--accent)] hover:underline"
+            >
+              Ver Análisis ↗
+            </a>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {agentSignals.map((s) => (
+              <div key={s.ticker} className="flex items-center gap-2">
+                <span className="text-sm font-medium">{s.ticker}</span>
+                <AgentSignalChip symbol={s.ticker} signal={s} />
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      )}
 
       <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => {
