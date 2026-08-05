@@ -17,7 +17,8 @@ import { SignOutButton } from "./sign-out-button";
 
 // market-agent (app hermana de análisis/decisión). URL por env, con fallback.
 const MARKET_AGENT_URL =
-  process.env.NEXT_PUBLIC_MARKET_AGENT_URL ?? "http://localhost:3001/opportunities";
+  process.env.NEXT_PUBLIC_MARKET_AGENT_URL ??
+  "https://market-agent-orcin.vercel.app/opportunities";
 
 function marketAgentOrigin(): string {
   try {
