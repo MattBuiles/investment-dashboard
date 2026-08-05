@@ -88,7 +88,8 @@ export async function updateCdt(
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
-    .eq("kind", "cdt");
+    .eq("kind", "cdt")
+    .eq("user_id", user.id);
 
   if (error) return { ok: false, error: error.message };
 
@@ -99,11 +100,16 @@ export async function updateCdt(
 
 export async function deleteCdt(id: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
   const { error } = await supabase
     .from("accounts")
     .delete()
     .eq("id", id)
-    .eq("kind", "cdt");
+    .eq("kind", "cdt")
+    .eq("user_id", user.id);
   if (error) throw new Error(error.message);
   revalidatePath("/cdts");
   revalidatePath("/overview");

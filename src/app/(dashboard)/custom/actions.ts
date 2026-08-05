@@ -78,7 +78,8 @@ export async function updateCustom(
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
-    .eq("kind", "custom");
+    .eq("kind", "custom")
+    .eq("user_id", user.id);
 
   if (error) return { ok: false, error: error.message };
 
@@ -89,11 +90,16 @@ export async function updateCustom(
 
 export async function deleteCustom(id: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
   const { error } = await supabase
     .from("accounts")
     .delete()
     .eq("id", id)
-    .eq("kind", "custom");
+    .eq("kind", "custom")
+    .eq("user_id", user.id);
   if (error) throw new Error(error.message);
   revalidatePath("/custom");
   revalidatePath("/overview");

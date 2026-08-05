@@ -113,7 +113,8 @@ export async function updateBroker(
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
-    .eq("kind", "brokerage");
+    .eq("kind", "brokerage")
+    .eq("user_id", user.id);
 
   if (error) return { ok: false, error: error.message };
 
@@ -148,7 +149,8 @@ export async function updateHolding(
       avg_cost: d.avg_cost,
       currency: d.currency.toUpperCase(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) return { ok: false, error: error.message };
 
@@ -159,7 +161,15 @@ export async function updateHolding(
 
 export async function deleteHolding(id: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("holdings").delete().eq("id", id);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
+  const { error } = await supabase
+    .from("holdings")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
   if (error) throw new Error(error.message);
   revalidatePath("/stocks");
   revalidatePath("/overview");
@@ -167,11 +177,16 @@ export async function deleteHolding(id: string) {
 
 export async function deleteBroker(id: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
   const { error } = await supabase
     .from("accounts")
     .delete()
     .eq("id", id)
-    .eq("kind", "brokerage");
+    .eq("kind", "brokerage")
+    .eq("user_id", user.id);
   if (error) throw new Error(error.message);
   revalidatePath("/stocks");
   revalidatePath("/overview");
