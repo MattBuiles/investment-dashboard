@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { Badge } from "invest-ui";
 import { formatCurrency } from "@/lib/utils";
 import { CdtForm, type CdtInitial } from "./cdt-form";
 import { deleteCdt } from "./actions";
@@ -9,6 +10,15 @@ import { deleteCdt } from "./actions";
 type Cdt = CdtInitial & {
   name: string;
 };
+
+// Días hasta el vencimiento (null si no hay fecha).
+function daysToMaturity(maturity?: string | null): number | null {
+  if (!maturity) return null;
+  const end = new Date(maturity + "T00:00:00").getTime();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((end - today.getTime()) / 86400000);
+}
 
 export function CdtRow({ cdt }: { cdt: Cdt }) {
   const [editing, setEditing] = useState(false);
@@ -24,10 +34,18 @@ export function CdtRow({ cdt }: { cdt: Cdt }) {
     );
   }
 
+  const days = daysToMaturity(cdt.maturity_date);
+
   return (
     <li className="flex items-center gap-4 px-6 py-4">
       <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{cdt.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium truncate">{cdt.name}</p>
+          {days != null && days < 0 && <Badge tone="down">Vencido</Badge>}
+          {days != null && days >= 0 && days <= 30 && (
+            <Badge tone="warn">Vence en {days}d</Badge>
+          )}
+        </div>
         <p className="text-xs text-[var(--muted)] mt-1 truncate">
           {cdt.institution}
           {cdt.interest_rate != null && (
