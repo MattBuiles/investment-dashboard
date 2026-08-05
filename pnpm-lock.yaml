@@ -32,6 +32,9 @@ importers:
       fast-xml-parser:
         specifier: ^5.9.3
         version: 5.9.3
+      invest-ui:
+        specifier: github:MattBuiles/invest-ui#main
+        version: https://codeload.github.com/MattBuiles/invest-ui/tar.gz/899b344627238c4643d2c8f60335b210c6c93e16(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       lucide-react:
         specifier: ^1.21.0
         version: 1.21.0(react@19.2.4)
@@ -1498,6 +1501,13 @@ packages:
   internmap@2.0.3:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
+
+  invest-ui@https://codeload.github.com/MattBuiles/invest-ui/tar.gz/899b344627238c4643d2c8f60335b210c6c93e16:
+    resolution: {tarball: https://codeload.github.com/MattBuiles/invest-ui/tar.gz/899b344627238c4643d2c8f60335b210c6c93e16}
+    version: 0.1.0
+    peerDependencies:
+      react: '>=18'
+      react-dom: '>=18'
 
   is-array-buffer@3.0.5:
     resolution: {integrity: sha512-DDfANUiiG2wC1qawP66qlTugJeL5HyzMpfr8lLK+jMQirGzNod0B12cFB/9q838Ru27sBwfw78/rdoU7RERz6A==}
@@ -3780,6 +3790,13 @@ snapshots:
       side-channel: 1.1.1
 
   internmap@2.0.3: {}
+
+  invest-ui@https://codeload.github.com/MattBuiles/invest-ui/tar.gz/899b344627238c4643d2c8f60335b210c6c93e16(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      clsx: 2.1.1
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      tailwind-merge: 3.6.0
 
   is-array-buffer@3.0.5:
     dependencies:
