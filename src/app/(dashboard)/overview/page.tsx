@@ -6,9 +6,12 @@ import { formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import {
   accountValueIn,
+  holdingMarketValue,
   type Account,
   type Holding,
 } from "@/lib/portfolio";
+import { Snowflake } from "invest-ui";
+import { portfolioSnowflake } from "@/lib/agent-signals";
 import { takeDailySnapshot } from "@/lib/snapshots";
 import { fetchFxRates } from "@/lib/fx";
 import { PortfolioChart } from "./portfolio-chart";
@@ -63,6 +66,10 @@ export default async function OverviewPage() {
     ? await supabase.from("ma_signals").select("*").in("ticker", heldSymbols)
     : { data: [] };
   const agentSignals = (agentSignalsRes.data ?? []) as AgentSignal[];
+  const sigMap = Object.fromEntries(agentSignals.map((s) => [s.ticker, s]));
+  const portfolioSnow = portfolioSnowflake(
+    holdings.map((h) => ({ signal: sigMap[h.symbol], weight: holdingMarketValue(h) }))
+  );
 
   if (user) {
     await takeDailySnapshot(supabase, user.id);
@@ -168,13 +175,21 @@ export default async function OverviewPage() {
               Ver Análisis ↗
             </a>
           </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {agentSignals.map((s) => (
-              <div key={s.ticker} className="flex items-center gap-2">
-                <span className="text-sm font-medium">{s.ticker}</span>
-                <AgentSignalChip symbol={s.ticker} signal={s} />
+          <div className="mt-4 flex flex-wrap items-center gap-6">
+            <div className="flex flex-1 flex-wrap gap-3">
+              {agentSignals.map((s) => (
+                <div key={s.ticker} className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{s.ticker}</span>
+                  <AgentSignalChip symbol={s.ticker} signal={s} />
+                </div>
+              ))}
+            </div>
+            {portfolioSnow && (
+              <div className="text-center">
+                <Snowflake axes={portfolioSnow} size={140} />
+                <p className="mt-1 text-xs text-[var(--muted)]">Snowflake de cartera</p>
               </div>
-            ))}
+            )}
           </div>
         </GlassCard>
       )}

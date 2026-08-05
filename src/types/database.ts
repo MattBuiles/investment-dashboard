@@ -151,30 +151,16 @@ export type Database = {
           regime: string | null
           valuation_verdict: string | null
           upside_pct: number | null
+          snow_value: number | null
+          snow_future: number | null
+          snow_past: number | null
+          snow_health: number | null
+          snow_div: number | null
+          fair_value: number | null
           updated_at: string
         }
-        Insert: {
-          ticker: string
-          name?: string | null
-          price?: number | null
-          score?: number | null
-          classification?: string | null
-          regime?: string | null
-          valuation_verdict?: string | null
-          upside_pct?: number | null
-          updated_at?: string
-        }
-        Update: {
-          ticker?: string
-          name?: string | null
-          price?: number | null
-          score?: number | null
-          classification?: string | null
-          regime?: string | null
-          valuation_verdict?: string | null
-          upside_pct?: number | null
-          updated_at?: string
-        }
+        Insert: { ticker: string; [k: string]: unknown }
+        Update: { [k: string]: unknown }
         Relationships: []
       }
       holdings: {
