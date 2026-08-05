@@ -318,6 +318,10 @@ export type Database = {
         Returns: undefined
       }
       get_broker_secret: { Args: { p_connection_id: string }; Returns: string }
+      get_broker_secret_service: {
+        Args: { p_connection_id: string }
+        Returns: string
+      }
       mark_broker_sync: {
         Args: { p_connection_id: string; p_error: string; p_status: string }
         Returns: undefined

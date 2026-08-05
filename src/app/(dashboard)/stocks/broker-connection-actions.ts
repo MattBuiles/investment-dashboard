@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { fetchFlexPositions, FlexError } from "@/lib/ibkr-flex";
+import { holdingRowsFromPositions } from "@/lib/ibkr-sync";
 
 const connectSchema = z.object({
   label: z.string().min(1).max(120),
@@ -166,18 +167,7 @@ export async function syncIbkrFlex(connectionId: string) {
     await supabase.from("holdings").delete().eq("account_id", conn.account_id);
 
     if (positions.length > 0) {
-      const rows = positions.map((p) => ({
-        user_id: user.id,
-        account_id: conn.account_id!,
-        symbol: p.symbol,
-        quantity: p.quantity,
-        avg_cost: p.avg_cost,
-        currency: p.currency,
-        last_price: p.last_price,
-        last_price_at: p.last_price != null ? new Date().toISOString() : null,
-        asset_class: p.asset_class,
-        ibkr_contract_id: p.ibkr_contract_id,
-      }));
+      const rows = holdingRowsFromPositions(positions, user.id, conn.account_id);
       const { error: insErr } = await supabase.from("holdings").insert(rows);
       if (insErr) throw new Error(insErr.message);
     }
