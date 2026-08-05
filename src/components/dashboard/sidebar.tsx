@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Compass,
 } from "lucide-react";
+import { ThemeToggle } from "invest-ui";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "./sign-out-button";
 
@@ -92,6 +93,9 @@ export function Sidebar({ userEmail }: { userEmail?: string }) {
             {userEmail}
           </p>
         )}
+        <div className="mb-2 px-1">
+          <ThemeToggle />
+        </div>
         <SignOutButton />
       </div>
     </aside>

@@ -1,22 +1,26 @@
 @import "tailwindcss";
+@import "invest-ui/theme.css";
+@source "../../node_modules/invest-ui/src";
 
+/* Bridge: los tokens del dashboard apuntan a la paleta de invest-ui (jade,
+ * claro+oscuro). Restylea sin reescribir cada componente. */
 :root {
-  --background: #fafafa;
-  --foreground: #0a0a0a;
-  --surface: #ffffff;
-  --surface-2: #f4f4f5;
-  --border: rgba(0, 0, 0, 0.08);
-  --muted: #71717a;
+  --background: var(--iv-bg);
+  --foreground: var(--iv-fg);
+  --surface: var(--iv-surface);
+  --surface-2: var(--iv-surface-2);
+  --border: var(--iv-border);
+  --muted: var(--iv-muted);
 
-  --accent: #7c3aed;
+  --accent: var(--iv-accent);
   --accent-2: #06b6d4;
 
-  --positive: #10b981;
-  --negative: #ef4444;
+  --positive: var(--iv-up);
+  --negative: var(--iv-down);
 
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 8px 24px -8px rgba(0, 0, 0, 0.08);
+  --glass-bg: color-mix(in oklab, var(--iv-surface) 72%, transparent);
+  --glass-border: var(--iv-border);
+  --glass-shadow: var(--iv-shadow);
 }
 
 @theme inline {

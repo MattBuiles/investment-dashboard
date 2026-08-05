@@ -17,6 +17,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "fast-xml-parser": "^5.9.3",
+    "invest-ui": "github:MattBuiles/invest-ui#main",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
     "react": "19.2.4",
