@@ -10,6 +10,7 @@ import {
 import { AddBrokerToggle } from "./add-broker-toggle";
 import { BrokerSection } from "./broker-section";
 import { IbkrConnectionCard } from "./ibkr-connection-card";
+import { IbkrConnectCard } from "./ibkr-connect-card";
 import type { AgentSignal } from "@/lib/agent-signals";
 
 export default async function StocksPage() {
@@ -27,14 +28,12 @@ export default async function StocksPage() {
         "id, label, flex_query_id, last_synced_at, last_sync_status, last_sync_error, token_expires_at"
       )
       .eq("broker_kind", "ibkr_flex")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .order("created_at", { ascending: false }),
   ]);
 
   const brokers: Account[] = brokersRes.data ?? [];
   const holdings: Holding[] = holdingsRes.data ?? [];
-  const connection = connectionRes.data ?? null;
+  const connections = connectionRes.data ?? [];
 
   // Señales de market-agent (Supabase compartido) por símbolo.
   const symbols = [...new Set(holdings.map((h) => h.symbol))];
@@ -55,13 +54,18 @@ export default async function StocksPage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Stocks</h1>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Posiciones por broker. IBKR sync próximamente.
+            Posiciones por broker. IBKR sincroniza a diario.
           </p>
         </div>
         <AddBrokerToggle />
       </header>
 
-      <IbkrConnectionCard connection={connection} />
+      <div className="space-y-4">
+        {connections.map((c) => (
+          <IbkrConnectionCard key={c.id} connection={c} />
+        ))}
+        <IbkrConnectCard additional={connections.length > 0} />
+      </div>
 
       <GlassCard className="p-6">
         <p className="text-sm text-[var(--muted)]">Valor total</p>
