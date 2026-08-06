@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import { fetchFlexPositions, FlexError, type FlexPosition } from "./ibkr-flex";
+import {
+  fetchFlexStatement,
+  FlexError,
+  type FlexPosition,
+  type FlexTrade,
+} from "./ibkr-flex";
 
 type Admin = SupabaseClient<Database>;
 
@@ -36,6 +41,57 @@ export function holdingRowsFromPositions(
     asset_class: p.asset_class,
     ibkr_contract_id: p.ibkr_contract_id,
   }));
+}
+
+export function transactionRowsFromTrades(
+  trades: FlexTrade[],
+  userId: string,
+  accountId: string
+) {
+  return trades.map((t) => ({
+    user_id: userId,
+    account_id: accountId,
+    kind: t.side, // "buy" | "sell"
+    symbol: t.symbol,
+    quantity: t.quantity,
+    price: t.price,
+    amount: t.amount,
+    currency: t.currency,
+    occurred_at: t.occurred_at,
+    ibkr_execution_id: t.trade_id,
+  }));
+}
+
+/**
+ * Inserta solo los trades nuevos como transactions (dedup por ibkr_execution_id
+ * ya presente en la cuenta). No borra transacciones existentes. Devuelve cuántas
+ * insertó. Idempotente entre syncs. Funciona con cliente admin o de sesión.
+ */
+export async function syncTradesToTransactions(
+  client: Admin,
+  trades: FlexTrade[],
+  userId: string,
+  accountId: string
+): Promise<number> {
+  if (trades.length === 0) return 0;
+
+  const { data: existing } = await client
+    .from("transactions")
+    .select("ibkr_execution_id")
+    .eq("account_id", accountId)
+    .not("ibkr_execution_id", "is", null);
+
+  const seen = new Set(
+    (existing ?? []).map((r) => r.ibkr_execution_id).filter(Boolean)
+  );
+  const fresh = trades.filter((t) => !seen.has(t.trade_id));
+  if (fresh.length === 0) return 0;
+
+  const { error } = await client
+    .from("transactions")
+    .insert(transactionRowsFromTrades(fresh, userId, accountId));
+  if (error) throw new Error(error.message);
+  return fresh.length;
 }
 
 function errorMessage(e: unknown): string {
@@ -87,7 +143,7 @@ export async function syncConnectionAsAdmin(
   }
 
   try {
-    const positions = await fetchFlexPositions(token, conn.flex_query_id);
+    const { positions, trades } = await fetchFlexStatement(token, conn.flex_query_id);
 
     const { error: delErr } = await admin
       .from("holdings")
@@ -100,6 +156,8 @@ export async function syncConnectionAsAdmin(
       const { error: insErr } = await admin.from("holdings").insert(rows);
       if (insErr) throw new Error(insErr.message);
     }
+
+    await syncTradesToTransactions(admin, trades, conn.user_id, conn.account_id);
 
     await markSync(admin, conn.id, "success", null);
     return { connectionId: conn.id, ok: true, count: positions.length };

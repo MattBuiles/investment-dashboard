@@ -11,6 +11,7 @@ import { AddBrokerToggle } from "./add-broker-toggle";
 import { BrokerSection } from "./broker-section";
 import { IbkrConnectionCard } from "./ibkr-connection-card";
 import { IbkrConnectCard } from "./ibkr-connect-card";
+import { RecentTransactions, type Transaction } from "./recent-transactions";
 import type { AgentSignal } from "@/lib/agent-signals";
 
 export default async function StocksPage() {
@@ -43,6 +44,17 @@ export default async function StocksPage() {
   const signals: Record<string, AgentSignal> = Object.fromEntries(
     (signalsRes.data ?? []).map((s: AgentSignal) => [s.ticker, s])
   );
+
+  const brokerIds = brokers.map((b) => b.id);
+  const txRes = brokerIds.length
+    ? await supabase
+        .from("transactions")
+        .select("id, kind, symbol, quantity, price, amount, currency, occurred_at")
+        .in("account_id", brokerIds)
+        .order("occurred_at", { ascending: false })
+        .limit(25)
+    : { data: [] };
+  const transactions = (txRes.data ?? []) as Transaction[];
 
   const total = holdings
     .filter((h) => brokers.some((b) => b.id === h.account_id))
@@ -102,6 +114,8 @@ export default async function StocksPage() {
           ))}
         </div>
       )}
+
+      <RecentTransactions transactions={transactions} />
     </div>
   );
 }
