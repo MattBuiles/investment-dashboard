@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import { Badge } from "invest-ui";
+import { Badge, useConfirm } from "invest-ui";
 import { formatCurrency } from "@/lib/utils";
 import {
   marketStats,
@@ -44,6 +44,7 @@ export function CdtRow({
   marketRatesByTerm?: RatesByTerm;
 }) {
   const [editing, setEditing] = useState(false);
+  const confirm = useConfirm();
 
   if (editing) {
     return (
@@ -108,7 +109,15 @@ export function CdtRow({
         type="button"
         aria-label={`Eliminar ${cdt.name}`}
         onClick={async () => {
-          if (!confirm(`Eliminar ${cdt.name}?`)) return;
+          if (
+            !(await confirm({
+              title: "Eliminar CDT",
+              message: `¿Eliminar ${cdt.name}?`,
+              confirmLabel: "Eliminar",
+              danger: true,
+            }))
+          )
+            return;
           await deleteCdt(cdt.id);
         }}
         className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"

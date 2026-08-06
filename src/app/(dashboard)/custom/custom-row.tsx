@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { useConfirm } from "invest-ui";
 import { formatCurrency } from "@/lib/utils";
 import { CustomForm, type CustomInitial } from "./custom-form";
 import { deleteCustom } from "./actions";
 
 export function CustomRow({ item }: { item: CustomInitial }) {
   const [editing, setEditing] = useState(false);
+  const confirm = useConfirm();
 
   if (editing) {
     return (
@@ -44,7 +46,15 @@ export function CustomRow({ item }: { item: CustomInitial }) {
         type="button"
         aria-label={`Eliminar ${item.name}`}
         onClick={async () => {
-          if (!confirm(`Eliminar ${item.name}?`)) return;
+          if (
+            !(await confirm({
+              title: "Eliminar activo",
+              message: `¿Eliminar ${item.name}?`,
+              confirmLabel: "Eliminar",
+              danger: true,
+            }))
+          )
+            return;
           await deleteCustom(item.id);
         }}
         className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
