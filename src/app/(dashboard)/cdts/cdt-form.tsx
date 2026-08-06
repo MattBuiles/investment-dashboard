@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
+import { useToast } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { createCdt, updateCdt, type CdtFormState } from "./actions";
 import {
@@ -34,6 +35,7 @@ export function CdtForm({
   marketRatesByTerm?: RatesByTerm;
 }) {
   const action = initial ? updateCdt.bind(null, initial.id) : createCdt;
+  const toast = useToast();
 
   const [state, formAction, pending] = useActionState<CdtFormState, FormData>(
     action,
@@ -50,8 +52,14 @@ export function CdtForm({
   );
 
   useEffect(() => {
-    if (state?.ok && onDone) onDone();
-  }, [state, onDone]);
+    if (state?.ok) {
+      toast({
+        message: initial ? "CDT actualizado" : "CDT agregado",
+        tone: "success",
+      });
+      onDone?.();
+    }
+  }, [state, onDone, initial, toast]);
 
   // Bancos para autocompletar (de la banda a 360, la más poblada).
   const bankOptions = useMemo(() => {

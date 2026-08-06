@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { useToast } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { createBroker, updateBroker, type BrokerFormState } from "./actions";
 
@@ -22,6 +23,7 @@ export function BrokerForm({
   initial?: BrokerInitial;
 }) {
   const action = initial ? updateBroker.bind(null, initial.id) : createBroker;
+  const toast = useToast();
 
   const [state, formAction, pending] = useActionState<BrokerFormState, FormData>(
     action,
@@ -29,8 +31,14 @@ export function BrokerForm({
   );
 
   useEffect(() => {
-    if (state?.ok && onDone) onDone();
-  }, [state, onDone]);
+    if (state?.ok) {
+      toast({
+        message: initial ? "Broker actualizado" : "Broker agregado",
+        tone: "success",
+      });
+      onDone?.();
+    }
+  }, [state, onDone, initial, toast]);
 
   return (
     <form action={formAction} className="space-y-4">

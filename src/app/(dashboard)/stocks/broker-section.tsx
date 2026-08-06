@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import { useConfirm } from "invest-ui";
+import { useConfirm, useToast } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
@@ -33,6 +33,7 @@ export function BrokerSection({
   const [editingBroker, setEditingBroker] = useState(false);
   const [editingHoldingId, setEditingHoldingId] = useState<string | null>(null);
   const confirm = useConfirm();
+  const toast = useToast();
 
   const total = holdings.reduce((s, h) => s + holdingMarketValue(h), 0);
 
@@ -82,7 +83,15 @@ export function BrokerSection({
                     }))
                   )
                     return;
-                  await deleteBroker(broker.id);
+                  try {
+                    await deleteBroker(broker.id);
+                    toast({ message: `${broker.name} eliminado`, tone: "success" });
+                  } catch (e) {
+                    toast({
+                      message: e instanceof Error ? e.message : "No se pudo eliminar",
+                      tone: "error",
+                    });
+                  }
                 }}
                 className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
               >
@@ -161,7 +170,15 @@ export function BrokerSection({
                         }))
                       )
                         return;
-                      await deleteHolding(h.id);
+                      try {
+                        await deleteHolding(h.id);
+                        toast({ message: `${h.symbol} eliminado`, tone: "success" });
+                      } catch (e) {
+                        toast({
+                          message: e instanceof Error ? e.message : "No se pudo eliminar",
+                          tone: "error",
+                        });
+                      }
                     }}
                     className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
                   >

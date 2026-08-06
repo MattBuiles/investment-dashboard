@@ -2,7 +2,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { GlassCard } from "@/components/ui/glass-card";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
-import { fetchCdtRatesByTerm } from "@/lib/cdt-rates";
+import {
+  fetchCdtRatesByTerm,
+  fetchCdtRateHistory,
+  cdtHistoryKey,
+  nearestTerm,
+  type RateHistoryByKey,
+} from "@/lib/cdt-rates";
 import { AddCdtToggle } from "./add-cdt-toggle";
 import { CdtRow } from "./cdt-row";
 import { MarketRatesSection } from "./market-rates";
@@ -17,6 +23,25 @@ export default async function CdtsPage() {
       .order("maturity_date", { ascending: true }),
     fetchCdtRatesByTerm(),
   ]);
+
+  // Tendencia histórica de tasa por banco+plazo, solo para los bancos que el
+  // usuario realmente tiene (una petición por par único, cacheada 1h).
+  const uniquePairs = new Map<string, { bank: string; termDesc: string }>();
+  for (const c of cdts ?? []) {
+    if (!c.institution) continue;
+    const termDesc = nearestTerm(c.term_months).desc;
+    uniquePairs.set(cdtHistoryKey(c.institution, termDesc), {
+      bank: c.institution,
+      termDesc,
+    });
+  }
+  const historyEntries = await Promise.all(
+    [...uniquePairs].map(
+      async ([key, { bank, termDesc }]) =>
+        [key, await fetchCdtRateHistory(bank, termDesc)] as const
+    )
+  );
+  const rateHistory: RateHistoryByKey = Object.fromEntries(historyEntries);
 
   const total = (cdts ?? []).reduce((s, c) => s + Number(c.principal ?? 0), 0);
   const today = new Date().toISOString().slice(0, 10);
@@ -73,6 +98,16 @@ export default async function CdtsPage() {
                 <CdtRow
                   key={c.id}
                   marketRatesByTerm={ratesByTerm}
+                  rateHistory={
+                    c.institution
+                      ? rateHistory[
+                          cdtHistoryKey(
+                            c.institution,
+                            nearestTerm(c.term_months).desc
+                          )
+                        ]
+                      : undefined
+                  }
                   cdt={{
                     id: c.id,
                     name: c.name,

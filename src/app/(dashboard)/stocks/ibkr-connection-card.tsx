@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { RefreshCw, Unlink, KeyRound, AlertTriangle } from "lucide-react";
-import { useConfirm } from "invest-ui";
+import { useConfirm, useToast } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IbkrRotateForm } from "./ibkr-rotate-form";
@@ -31,8 +31,8 @@ export function IbkrConnectionCard({
 }) {
   const [rotating, setRotating] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [feedback, setFeedback] = useState<string | null>(null);
   const confirm = useConfirm();
+  const toast = useToast();
 
   const days = daysUntil(connection.token_expires_at);
   const expired = days != null && days <= 0;
@@ -94,7 +94,6 @@ export function IbkrConnectionCard({
               {connection.last_sync_status === "error" && connection.last_sync_error && (
                 <p className="mt-1 text-xs text-[var(--negative)]">{connection.last_sync_error}</p>
               )}
-              {feedback && <p className="mt-2 text-xs">{feedback}</p>}
             </div>
 
             <div className="flex items-center gap-2">
@@ -104,11 +103,15 @@ export function IbkrConnectionCard({
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    setFeedback("Sincronizando…");
                     const res = await syncIbkrFlex(connection.id);
-                    setFeedback(
-                      res.ok ? `Sync OK · ${res.count} posiciones` : `Error: ${res.error}`
-                    );
+                    if (res.ok) {
+                      toast({
+                        message: `Sync OK · ${res.count} posiciones`,
+                        tone: "success",
+                      });
+                    } else {
+                      toast({ title: "Error de sync", message: res.error, tone: "error" });
+                    }
                   })
                 }
               >
@@ -139,7 +142,15 @@ export function IbkrConnectionCard({
                   )
                     return;
                   startTransition(async () => {
-                    await disconnectIbkrFlex(connection.id);
+                    try {
+                      await disconnectIbkrFlex(connection.id);
+                      toast({ message: "IBKR desconectado", tone: "success" });
+                    } catch (e) {
+                      toast({
+                        message: e instanceof Error ? e.message : "No se pudo desconectar",
+                        tone: "error",
+                      });
+                    }
                   });
                 }}
                 className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
