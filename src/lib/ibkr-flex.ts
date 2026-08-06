@@ -13,6 +13,22 @@ export type FlexPosition = {
   ibkr_contract_id: string | null;
 };
 
+export type FlexTrade = {
+  trade_id: string;
+  symbol: string;
+  side: "buy" | "sell";
+  quantity: number;
+  price: number;
+  amount: number; // netCash (signed): negativo compra, positivo venta
+  currency: string;
+  occurred_at: string; // ISO
+};
+
+export type FlexStatementData = {
+  positions: FlexPosition[];
+  trades: FlexTrade[];
+};
+
 export class FlexError extends Error {
   code: string;
   constructor(code: string, message: string) {
@@ -42,6 +58,21 @@ type FlexStatement = {
   OpenPositions?: {
     OpenPosition?: OpenPositionEl | OpenPositionEl[];
   };
+  Trades?: {
+    Trade?: TradeEl | TradeEl[];
+  };
+};
+
+type TradeEl = {
+  symbol?: string;
+  tradeID?: string | number;
+  tradeDate?: string | number;
+  dateTime?: string;
+  quantity?: string | number;
+  tradePrice?: string | number;
+  netCash?: string | number;
+  buySell?: string;
+  currency?: string;
 };
 
 type OpenPositionEl = {
@@ -140,11 +171,66 @@ function parsePositions(xml: string): FlexPosition[] {
   return positions;
 }
 
+// Convierte "20240115" o "20240115;103000" en ISO. Devuelve null si no parsea.
+function parseTradeDate(tradeDate?: string | number, dateTime?: string): string | null {
+  const raw = String(tradeDate ?? dateTime ?? "").trim();
+  const m = raw.match(/^(\d{4})(\d{2})(\d{2})/);
+  if (!m) return null;
+  return `${m[1]}-${m[2]}-${m[3]}T00:00:00Z`;
+}
+
+function parseTrades(xml: string): FlexTrade[] {
+  const parsed = parser.parse(xml) as FlexQueryResponse;
+  const statements = asArray(parsed.FlexQueryResponse?.FlexStatements?.FlexStatement);
+
+  const trades: FlexTrade[] = [];
+  for (const stmt of statements) {
+    for (const t of asArray(stmt.Trades?.Trade)) {
+      const tradeId = t.tradeID != null ? String(t.tradeID) : "";
+      const symbol = t.symbol?.trim();
+      const side = t.buySell?.toUpperCase();
+      if (!tradeId || !symbol || (side !== "BUY" && side !== "SELL")) continue;
+
+      const occurred_at = parseTradeDate(t.tradeDate, t.dateTime);
+      if (!occurred_at) continue;
+
+      const quantity = Math.abs(Number(t.quantity ?? 0));
+      const price = Number(t.tradePrice ?? 0);
+      const netCash = Number(t.netCash ?? 0);
+      const amount = Number.isFinite(netCash) && netCash !== 0
+        ? netCash
+        : (side === "BUY" ? -1 : 1) * quantity * (Number.isFinite(price) ? price : 0);
+
+      trades.push({
+        trade_id: tradeId,
+        symbol: symbol.toUpperCase(),
+        side: side === "BUY" ? "buy" : "sell",
+        quantity: Number.isFinite(quantity) ? quantity : 0,
+        price: Number.isFinite(price) ? price : 0,
+        amount: Number.isFinite(amount) ? amount : 0,
+        currency: (t.currency ?? "USD").toUpperCase(),
+        occurred_at,
+      });
+    }
+  }
+  return trades;
+}
+
+// Un solo SendRequest/GetStatement devuelve posiciones + trades (si el Flex
+// query incluye la sección Trades; si no, trades queda vacío — no falla).
+export async function fetchFlexStatement(
+  token: string,
+  queryId: string
+): Promise<FlexStatementData> {
+  const ref = await sendRequest(token, queryId);
+  const xml = await getStatement(token, ref);
+  return { positions: parsePositions(xml), trades: parseTrades(xml) };
+}
+
 export async function fetchFlexPositions(
   token: string,
   queryId: string
 ): Promise<FlexPosition[]> {
-  const ref = await sendRequest(token, queryId);
-  const xml = await getStatement(token, ref);
-  return parsePositions(xml);
+  const { positions } = await fetchFlexStatement(token, queryId);
+  return positions;
 }

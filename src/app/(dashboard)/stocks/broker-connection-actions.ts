@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { fetchFlexPositions, FlexError } from "@/lib/ibkr-flex";
-import { holdingRowsFromPositions } from "@/lib/ibkr-sync";
+import { fetchFlexStatement, FlexError } from "@/lib/ibkr-flex";
+import {
+  holdingRowsFromPositions,
+  syncTradesToTransactions,
+} from "@/lib/ibkr-sync";
 
 const connectSchema = z.object({
   label: z.string().min(1).max(120),
@@ -162,7 +165,7 @@ export async function syncIbkrFlex(connectionId: string) {
   if (secretErr || !token) throw new Error(secretErr?.message ?? "Could not read token.");
 
   try {
-    const positions = await fetchFlexPositions(token, conn.flex_query_id);
+    const { positions, trades } = await fetchFlexStatement(token, conn.flex_query_id);
 
     await supabase.from("holdings").delete().eq("account_id", conn.account_id);
 
@@ -171,6 +174,8 @@ export async function syncIbkrFlex(connectionId: string) {
       const { error: insErr } = await supabase.from("holdings").insert(rows);
       if (insErr) throw new Error(insErr.message);
     }
+
+    await syncTradesToTransactions(supabase, trades, user.id, conn.account_id);
 
     await supabase.rpc("mark_broker_sync", {
       p_connection_id: connectionId,
