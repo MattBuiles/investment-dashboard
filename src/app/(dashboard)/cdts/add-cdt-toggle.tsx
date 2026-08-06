@@ -4,9 +4,14 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import type { RatesByTerm } from "@/lib/cdt-rates";
 import { CdtForm } from "./cdt-form";
 
-export function AddCdtToggle() {
+export function AddCdtToggle({
+  marketRatesByTerm,
+}: {
+  marketRatesByTerm?: RatesByTerm;
+}) {
   const [open, setOpen] = useState(false);
 
   if (!open) {
@@ -23,7 +28,10 @@ export function AddCdtToggle() {
       <CardContent className="pt-6">
         <h2 className="text-base font-medium">Nuevo CDT</h2>
         <div className="mt-4">
-          <CdtForm onDone={() => setOpen(false)} />
+          <CdtForm
+            marketRatesByTerm={marketRatesByTerm}
+            onDone={() => setOpen(false)}
+          />
         </div>
       </CardContent>
     </Card>

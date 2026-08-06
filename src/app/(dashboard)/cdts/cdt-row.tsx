@@ -4,6 +4,11 @@ import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Badge } from "invest-ui";
 import { formatCurrency } from "@/lib/utils";
+import {
+  marketStats,
+  nearestTerm,
+  type RatesByTerm,
+} from "@/lib/cdt-rates";
 import { CdtForm, type CdtInitial } from "./cdt-form";
 import { deleteCdt } from "./actions";
 
@@ -20,7 +25,24 @@ function daysToMaturity(maturity?: string | null): number | null {
   return Math.round((end - today.getTime()) / 86400000);
 }
 
-export function CdtRow({ cdt }: { cdt: Cdt }) {
+// Compara la tasa del CDT (decimal) contra la banda de mercado del mismo plazo.
+function marketComparison(cdt: Cdt, ratesByTerm?: RatesByTerm) {
+  if (!ratesByTerm || cdt.interest_rate == null) return null;
+  const term = nearestTerm(cdt.term_months);
+  const stats = marketStats(ratesByTerm[term.desc] ?? []);
+  if (!stats) return null;
+  const yourPct = Number(cdt.interest_rate) * 100;
+  if (!Number.isFinite(yourPct)) return null;
+  return { term, stats, yourPct, deltaVsAvg: yourPct - stats.avg };
+}
+
+export function CdtRow({
+  cdt,
+  marketRatesByTerm,
+}: {
+  cdt: Cdt;
+  marketRatesByTerm?: RatesByTerm;
+}) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -28,6 +50,7 @@ export function CdtRow({ cdt }: { cdt: Cdt }) {
       <li className="px-6 py-4 bg-[var(--surface-2)]">
         <CdtForm
           initial={cdt}
+          marketRatesByTerm={marketRatesByTerm}
           onDone={() => setEditing(false)}
         />
       </li>
@@ -35,6 +58,7 @@ export function CdtRow({ cdt }: { cdt: Cdt }) {
   }
 
   const days = daysToMaturity(cdt.maturity_date);
+  const cmp = marketComparison(cdt, marketRatesByTerm);
 
   return (
     <li className="flex items-center gap-4 px-6 py-4">
@@ -45,11 +69,23 @@ export function CdtRow({ cdt }: { cdt: Cdt }) {
           {days != null && days >= 0 && days <= 30 && (
             <Badge tone="warn">Vence en {days}d</Badge>
           )}
+          {cmp && cmp.yourPct >= cmp.stats.top && (
+            <Badge tone="up">Top del mercado</Badge>
+          )}
+          {cmp && cmp.yourPct < cmp.stats.top && cmp.deltaVsAvg >= 0 && (
+            <Badge tone="up">+{cmp.deltaVsAvg.toFixed(2)}% vs prom</Badge>
+          )}
+          {cmp && cmp.deltaVsAvg < 0 && (
+            <Badge tone="warn">{cmp.deltaVsAvg.toFixed(2)}% vs prom</Badge>
+          )}
         </div>
         <p className="text-xs text-[var(--muted)] mt-1 truncate">
           {cdt.institution}
           {cdt.interest_rate != null && (
             <> · {(Number(cdt.interest_rate) * 100).toFixed(2)}% · {cdt.term_months} meses</>
+          )}
+          {cmp && (
+            <> · mercado {cmp.term.label}: prom {cmp.stats.avg.toFixed(2)}% · top {cmp.stats.top.toFixed(2)}%</>
           )}
           {cdt.maturity_date && <> · vence {cdt.maturity_date}</>}
         </p>
