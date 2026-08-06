@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Plug, RefreshCw, Unlink, KeyRound, AlertTriangle } from "lucide-react";
+import { useConfirm } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IbkrConnectForm } from "./ibkr-connect-form";
@@ -33,6 +34,7 @@ export function IbkrConnectionCard({
   const [rotating, setRotating] = useState(false);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   if (!connection) {
     return (
@@ -157,12 +159,21 @@ export function IbkrConnectionCard({
                 type="button"
                 aria-label="Desconectar IBKR"
                 disabled={pending}
-                onClick={() =>
+                onClick={async () => {
+                  if (
+                    !(await confirm({
+                      title: "Desconectar IBKR",
+                      message:
+                        "Borra las posiciones sincronizadas y el token cifrado. ¿Continuar?",
+                      confirmLabel: "Desconectar",
+                      danger: true,
+                    }))
+                  )
+                    return;
                   startTransition(async () => {
-                    if (!confirm("Desconectar IBKR? Borra las posiciones sincronizadas y el token cifrado.")) return;
                     await disconnectIbkrFlex(connection.id);
-                  })
-                }
+                  });
+                }}
                 className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
               >
                 <Unlink className="size-4" />

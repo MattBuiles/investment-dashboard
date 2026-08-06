@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
+import { useConfirm } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
@@ -31,6 +32,7 @@ export function BrokerSection({
   const [adding, setAdding] = useState(false);
   const [editingBroker, setEditingBroker] = useState(false);
   const [editingHoldingId, setEditingHoldingId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const total = holdings.reduce((s, h) => s + holdingMarketValue(h), 0);
 
@@ -67,9 +69,19 @@ export function BrokerSection({
                 type="button"
                 aria-label={`Eliminar ${broker.name}`}
                 onClick={async () => {
-                  if (holdings.length > 0) {
-                    if (!confirm(`${broker.name} tiene ${holdings.length} posiciones. Eliminar todo?`)) return;
-                  } else if (!confirm(`Eliminar ${broker.name}?`)) return;
+                  const message =
+                    holdings.length > 0
+                      ? `${broker.name} tiene ${holdings.length} posiciones. ¿Eliminar todo?`
+                      : `¿Eliminar ${broker.name}?`;
+                  if (
+                    !(await confirm({
+                      title: "Eliminar broker",
+                      message,
+                      confirmLabel: "Eliminar",
+                      danger: true,
+                    }))
+                  )
+                    return;
                   await deleteBroker(broker.id);
                 }}
                 className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
@@ -140,7 +152,15 @@ export function BrokerSection({
                     type="button"
                     aria-label={`Eliminar ${h.symbol}`}
                     onClick={async () => {
-                      if (!confirm(`Eliminar ${h.symbol}?`)) return;
+                      if (
+                        !(await confirm({
+                          title: "Eliminar posición",
+                          message: `¿Eliminar ${h.symbol}?`,
+                          confirmLabel: "Eliminar",
+                          danger: true,
+                        }))
+                      )
+                        return;
                       await deleteHolding(h.id);
                     }}
                     className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
