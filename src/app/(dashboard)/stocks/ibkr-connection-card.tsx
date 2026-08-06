@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plug, RefreshCw, Unlink, KeyRound, AlertTriangle } from "lucide-react";
+import { RefreshCw, Unlink, KeyRound, AlertTriangle } from "lucide-react";
 import { useConfirm } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { IbkrConnectForm } from "./ibkr-connect-form";
 import { IbkrRotateForm } from "./ibkr-rotate-form";
 import { disconnectIbkrFlex, syncIbkrFlex } from "./broker-connection-actions";
 
@@ -28,43 +27,12 @@ function daysUntil(iso: string | null): number | null {
 export function IbkrConnectionCard({
   connection,
 }: {
-  connection: Connection | null;
+  connection: Connection;
 }) {
-  const [adding, setAdding] = useState(false);
   const [rotating, setRotating] = useState(false);
   const [pending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
   const confirm = useConfirm();
-
-  if (!connection) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          {adding ? (
-            <>
-              <h3 className="text-base font-semibold">Conectar IBKR (Flex)</h3>
-              <div className="mt-4">
-                <IbkrConnectForm onDone={() => setAdding(false)} />
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-semibold">Sin broker conectado</h3>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  Conecta IBKR (Flex Web Service) para sincronizar posiciones automáticamente.
-                </p>
-              </div>
-              <Button size="sm" onClick={() => setAdding(true)}>
-                <Plug className="size-4" />
-                Conectar IBKR
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
 
   const days = daysUntil(connection.token_expires_at);
   const expired = days != null && days <= 0;
