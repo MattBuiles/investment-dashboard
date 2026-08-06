@@ -2,17 +2,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { GlassCard } from "@/components/ui/glass-card";
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
+import { fetchCdtRatesByTerm } from "@/lib/cdt-rates";
 import { AddCdtToggle } from "./add-cdt-toggle";
 import { CdtRow } from "./cdt-row";
 import { MarketRatesSection } from "./market-rates";
 
 export default async function CdtsPage() {
   const supabase = await createClient();
-  const { data: cdts } = await supabase
-    .from("accounts")
-    .select("*")
-    .eq("kind", "cdt")
-    .order("maturity_date", { ascending: true });
+  const [{ data: cdts }, ratesByTerm] = await Promise.all([
+    supabase
+      .from("accounts")
+      .select("*")
+      .eq("kind", "cdt")
+      .order("maturity_date", { ascending: true }),
+    fetchCdtRatesByTerm(),
+  ]);
 
   const total = (cdts ?? []).reduce((s, c) => s + Number(c.principal ?? 0), 0);
   const today = new Date().toISOString().slice(0, 10);
@@ -29,7 +33,7 @@ export default async function CdtsPage() {
             Certificados de depósito a término.
           </p>
         </div>
-        <AddCdtToggle />
+        <AddCdtToggle marketRatesByTerm={ratesByTerm} />
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2">
@@ -68,6 +72,7 @@ export default async function CdtsPage() {
               {cdts.map((c) => (
                 <CdtRow
                   key={c.id}
+                  marketRatesByTerm={ratesByTerm}
                   cdt={{
                     id: c.id,
                     name: c.name,
@@ -86,7 +91,7 @@ export default async function CdtsPage() {
         </Card>
       )}
 
-      <MarketRatesSection />
+      <MarketRatesSection ratesByTerm={ratesByTerm} />
     </div>
   );
 }

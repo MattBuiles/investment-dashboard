@@ -1,8 +1,13 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createCdt, updateCdt, type CdtFormState } from "./actions";
+import {
+  nearestTerm,
+  rateForBank,
+  type RatesByTerm,
+} from "@/lib/cdt-rates";
 
 const inputCls =
   "mt-1 block w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 text-sm focus:border-[var(--accent)] focus:outline-none";
@@ -22,22 +27,51 @@ export type CdtInitial = {
 export function CdtForm({
   onDone,
   initial,
+  marketRatesByTerm,
 }: {
   onDone?: () => void;
   initial?: CdtInitial;
+  marketRatesByTerm?: RatesByTerm;
 }) {
-  const action = initial
-    ? updateCdt.bind(null, initial.id)
-    : createCdt;
+  const action = initial ? updateCdt.bind(null, initial.id) : createCdt;
 
   const [state, formAction, pending] = useActionState<CdtFormState, FormData>(
     action,
     undefined
   );
 
+  // Controlados para poder prellenar la tasa según banco + plazo.
+  const [bank, setBank] = useState(initial?.institution ?? "");
+  const [months, setMonths] = useState(
+    initial?.term_months != null ? String(initial.term_months) : ""
+  );
+  const [rate, setRate] = useState(
+    initial?.interest_rate != null ? String(initial.interest_rate) : ""
+  );
+
   useEffect(() => {
     if (state?.ok && onDone) onDone();
   }, [state, onDone]);
+
+  // Bancos para autocompletar (de la banda a 360, la más poblada).
+  const bankOptions = useMemo(() => {
+    const list = marketRatesByTerm?.["A 360 DIAS"] ?? [];
+    return [...new Set(list.map((r) => r.bank))];
+  }, [marketRatesByTerm]);
+
+  // Sugerencia de tasa de mercado (porcentaje) para el banco + plazo actuales.
+  const suggestedPct = useMemo(() => {
+    if (!marketRatesByTerm || !bank.trim() || !months) return null;
+    const term = nearestTerm(Number(months));
+    return rateForBank(marketRatesByTerm[term.desc] ?? [], bank);
+  }, [marketRatesByTerm, bank, months]);
+
+  // Tasa capturada está en decimal (0.105); el mercado viene en porcentaje.
+  const currentPct = rate ? Number(rate) * 100 : null;
+  const showSuggestion =
+    suggestedPct != null &&
+    (currentPct == null ||
+      Math.abs(currentPct - suggestedPct) > 0.01);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -48,7 +82,23 @@ export function CdtForm({
         </div>
         <div>
           <label htmlFor="institution" className="text-sm font-medium">Banco</label>
-          <input id="institution" name="institution" required className={inputCls} defaultValue={initial?.institution ?? ""} placeholder="Bancolombia" />
+          <input
+            id="institution"
+            name="institution"
+            required
+            list="cdt-bank-options"
+            className={inputCls}
+            value={bank}
+            onChange={(e) => setBank(e.target.value)}
+            placeholder="Bancolombia"
+          />
+          {bankOptions.length > 0 && (
+            <datalist id="cdt-bank-options">
+              {bankOptions.map((b) => (
+                <option key={b} value={b} />
+              ))}
+            </datalist>
+          )}
         </div>
         <div>
           <label htmlFor="currency" className="text-sm font-medium">Currency</label>
@@ -60,11 +110,41 @@ export function CdtForm({
         </div>
         <div>
           <label htmlFor="interest_rate" className="text-sm font-medium">Tasa (decimal)</label>
-          <input id="interest_rate" name="interest_rate" type="number" step="0.0001" min="0" max="1" required className={inputCls} defaultValue={initial?.interest_rate ?? ""} placeholder="0.105" />
+          <input
+            id="interest_rate"
+            name="interest_rate"
+            type="number"
+            step="0.0001"
+            min="0"
+            max="1"
+            required
+            className={inputCls}
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            placeholder="0.105"
+          />
+          {showSuggestion && (
+            <button
+              type="button"
+              onClick={() => setRate((suggestedPct! / 100).toFixed(4))}
+              className="mt-1.5 text-xs text-[var(--accent)] hover:underline"
+            >
+              Usar tasa de mercado: {suggestedPct!.toFixed(2)}%
+            </button>
+          )}
         </div>
         <div>
           <label htmlFor="term_months" className="text-sm font-medium">Plazo (meses)</label>
-          <input id="term_months" name="term_months" type="number" min="1" required className={inputCls} defaultValue={initial?.term_months ?? ""} />
+          <input
+            id="term_months"
+            name="term_months"
+            type="number"
+            min="1"
+            required
+            className={inputCls}
+            value={months}
+            onChange={(e) => setMonths(e.target.value)}
+          />
         </div>
         <div>
           <label htmlFor="start_date" className="text-sm font-medium">Fecha emisión</label>
