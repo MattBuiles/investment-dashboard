@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import { useConfirm } from "invest-ui";
+import { useConfirm, useToast } from "invest-ui";
 import { formatCurrency } from "@/lib/utils";
 import { CustomForm, type CustomInitial } from "./custom-form";
 import { deleteCustom } from "./actions";
@@ -10,6 +10,7 @@ import { deleteCustom } from "./actions";
 export function CustomRow({ item }: { item: CustomInitial }) {
   const [editing, setEditing] = useState(false);
   const confirm = useConfirm();
+  const toast = useToast();
 
   if (editing) {
     return (
@@ -55,7 +56,15 @@ export function CustomRow({ item }: { item: CustomInitial }) {
             }))
           )
             return;
-          await deleteCustom(item.id);
+          try {
+            await deleteCustom(item.id);
+            toast({ message: `${item.name} eliminado`, tone: "success" });
+          } catch (e) {
+            toast({
+              message: e instanceof Error ? e.message : "No se pudo eliminar",
+              tone: "error",
+            });
+          }
         }}
         className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
       >

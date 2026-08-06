@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { useToast } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { createHolding, updateHolding, type HoldingFormState } from "./actions";
 
@@ -27,6 +28,7 @@ export function HoldingForm({
   initial?: HoldingInitial;
 }) {
   const action = initial ? updateHolding.bind(null, initial.id) : createHolding;
+  const toast = useToast();
 
   const [state, formAction, pending] = useActionState<HoldingFormState, FormData>(
     action,
@@ -34,8 +36,14 @@ export function HoldingForm({
   );
 
   useEffect(() => {
-    if (state?.ok && onDone) onDone();
-  }, [state, onDone]);
+    if (state?.ok) {
+      toast({
+        message: initial ? "Posición actualizada" : "Posición agregada",
+        tone: "success",
+      });
+      onDone?.();
+    }
+  }, [state, onDone, initial, toast]);
 
   return (
     <form action={formAction} className="space-y-3">

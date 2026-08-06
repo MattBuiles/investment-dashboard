@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import { Badge, useConfirm } from "invest-ui";
+import { Badge, Sparkline, useConfirm, useToast } from "invest-ui";
 import { formatCurrency } from "@/lib/utils";
 import {
   marketStats,
@@ -39,12 +39,15 @@ function marketComparison(cdt: Cdt, ratesByTerm?: RatesByTerm) {
 export function CdtRow({
   cdt,
   marketRatesByTerm,
+  rateHistory,
 }: {
   cdt: Cdt;
   marketRatesByTerm?: RatesByTerm;
+  rateHistory?: number[];
 }) {
   const [editing, setEditing] = useState(false);
   const confirm = useConfirm();
+  const toast = useToast();
 
   if (editing) {
     return (
@@ -91,6 +94,17 @@ export function CdtRow({
           {cdt.maturity_date && <> · vence {cdt.maturity_date}</>}
         </p>
       </div>
+      {rateHistory && rateHistory.length >= 2 && (
+        <div
+          className="hidden sm:flex flex-col items-end"
+          title={`Tendencia de tasa de mercado ${nearestTerm(cdt.term_months).label}`}
+        >
+          <Sparkline data={rateHistory} width={64} height={22} />
+          <span className="mt-0.5 text-[10px] text-[var(--muted)]">
+            mercado {nearestTerm(cdt.term_months).label}
+          </span>
+        </div>
+      )}
       <div className="text-right">
         <p className="font-medium tabular-nums">
           {formatCurrency(Number(cdt.principal ?? 0), cdt.currency)}
@@ -118,7 +132,15 @@ export function CdtRow({
             }))
           )
             return;
-          await deleteCdt(cdt.id);
+          try {
+            await deleteCdt(cdt.id);
+            toast({ message: `${cdt.name} eliminado`, tone: "success" });
+          } catch (e) {
+            toast({
+              message: e instanceof Error ? e.message : "No se pudo eliminar",
+              tone: "error",
+            });
+          }
         }}
         className="rounded-lg p-2 text-[var(--muted)] transition-colors hover:bg-[var(--surface-2)] hover:text-[var(--negative)]"
       >

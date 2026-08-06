@@ -77,6 +77,51 @@ export async function fetchCdtRatesByTerm(limit: number = 10): Promise<RatesByTe
   return Object.fromEntries(entries);
 }
 
+// Serie histórica de tasa (una por corte, cronológica) para un banco + plazo.
+export async function fetchCdtRateHistory(
+  bank: string,
+  termDescription: string,
+  points: number = 10
+): Promise<number[]> {
+  const b = bank.trim().toUpperCase().replace(/'/g, "''");
+  if (!b) return [];
+  const where = `descripcion='${termDescription}' AND nombre_unidad_de_captura='EMISIONES PUNTUALES Y RANGOS DE EMISION DE CDT' AND upper(nombreentidad) like '%${b}%'`;
+  const params = new URLSearchParams({
+    $where: where,
+    $order: "fechacorte DESC, tasa DESC",
+    $limit: "120",
+  });
+  try {
+    const res = await fetch(`${ENDPOINT}?${params.toString()}`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const rows = (await res.json()) as RawRow[];
+    if (!Array.isArray(rows)) return [];
+
+    // Una tasa por fecha de corte (la mejor de ese banco ese día).
+    const byDate = new Map<string, number>();
+    for (const r of rows) {
+      const d = r.fechacorte ?? "";
+      if (!d || byDate.has(d)) continue;
+      const rate = Number(r.tasa);
+      if (Number.isFinite(rate)) byDate.set(d, rate);
+    }
+    const series = [...byDate.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([, rate]) => rate);
+    return series.slice(-points);
+  } catch {
+    return [];
+  }
+}
+
+export type RateHistoryByKey = Record<string, number[]>;
+
+export function cdtHistoryKey(bank: string, termDescription: string): string {
+  return `${bank.trim().toLowerCase()}|${termDescription}`;
+}
+
 export async function fetchTopCdtRates(
   termDescription: string = "A 360 DIAS",
   limit: number = 10

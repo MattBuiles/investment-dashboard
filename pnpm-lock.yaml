@@ -34,7 +34,7 @@ importers:
         version: 5.9.3
       invest-ui:
         specifier: github:MattBuiles/invest-ui#main
-        version: https://codeload.github.com/MattBuiles/invest-ui/tar.gz/43108e82bd98a165fb6898166d2dddb53a832cf9(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: https://codeload.github.com/MattBuiles/invest-ui/tar.gz/962bc7c39209312d6bdbb25a50f683e6c0fa6e7f(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       lucide-react:
         specifier: ^1.21.0
         version: 1.21.0(react@19.2.4)
@@ -1505,8 +1505,8 @@ packages:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
 
-  invest-ui@https://codeload.github.com/MattBuiles/invest-ui/tar.gz/43108e82bd98a165fb6898166d2dddb53a832cf9:
-    resolution: {tarball: https://codeload.github.com/MattBuiles/invest-ui/tar.gz/43108e82bd98a165fb6898166d2dddb53a832cf9}
+  invest-ui@https://codeload.github.com/MattBuiles/invest-ui/tar.gz/962bc7c39209312d6bdbb25a50f683e6c0fa6e7f:
+    resolution: {tarball: https://codeload.github.com/MattBuiles/invest-ui/tar.gz/962bc7c39209312d6bdbb25a50f683e6c0fa6e7f}
     version: 0.1.0
     peerDependencies:
       react: '>=18'
@@ -3797,7 +3797,7 @@ snapshots:
 
   internmap@2.0.3: {}
 
-  invest-ui@https://codeload.github.com/MattBuiles/invest-ui/tar.gz/43108e82bd98a165fb6898166d2dddb53a832cf9(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  invest-ui@https://codeload.github.com/MattBuiles/invest-ui/tar.gz/962bc7c39209312d6bdbb25a50f683e6c0fa6e7f(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       clsx: 2.1.1
       react: 19.2.4

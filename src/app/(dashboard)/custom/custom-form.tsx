@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
+import { useToast } from "invest-ui";
 import { Button } from "@/components/ui/button";
 import { createCustom, updateCustom, type CustomFormState } from "./actions";
 
@@ -26,6 +27,7 @@ export function CustomForm({
   const action = initial
     ? updateCustom.bind(null, initial.id)
     : createCustom;
+  const toast = useToast();
 
   const [state, formAction, pending] = useActionState<CustomFormState, FormData>(
     action,
@@ -33,8 +35,14 @@ export function CustomForm({
   );
 
   useEffect(() => {
-    if (state?.ok && onDone) onDone();
-  }, [state, onDone]);
+    if (state?.ok) {
+      toast({
+        message: initial ? "Activo actualizado" : "Activo agregado",
+        tone: "success",
+      });
+      onDone?.();
+    }
+  }, [state, onDone, initial, toast]);
 
   return (
     <form action={formAction} className="space-y-4">
