@@ -32,7 +32,11 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAuthRoute = pathname.startsWith("/login");
   const isAuthCallback = pathname.startsWith("/auth/");
-  const isPublic = pathname === "/" || isAuthRoute || isAuthCallback;
+  // Cron routes carry no user session — they authenticate themselves with
+  // CRON_SECRET. Redirecting them to /login would make the scheduled sync a
+  // no-op, so they bypass the session gate here.
+  const isCron = pathname.startsWith("/api/cron");
+  const isPublic = pathname === "/" || isAuthRoute || isAuthCallback || isCron;
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
