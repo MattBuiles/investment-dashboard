@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { useToast } from "invest-ui";
+import { useToast } from "strata";
 import { Button } from "@/components/ui/button";
 import { createHolding, updateHolding, type HoldingFormState } from "./actions";
 

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { RefreshCw, Unlink, KeyRound, AlertTriangle } from "lucide-react";
-import { useConfirm, useToast } from "invest-ui";
+import { useConfirm, useToast } from "strata";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IbkrRotateForm } from "./ibkr-rotate-form";

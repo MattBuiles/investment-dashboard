@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import { Badge, Sparkline, useConfirm, useToast } from "invest-ui";
+import { Badge, Sparkline, useConfirm, useToast } from "strata";
 import { formatCurrency } from "@/lib/utils";
 import {
   marketStats,

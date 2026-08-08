@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Compass,
 } from "lucide-react";
-import { ThemeToggle } from "invest-ui";
+import { ThemeToggle } from "strata";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "./sign-out-button";
 

@@ -1,4 +1,4 @@
-import { ConfirmProvider, ToastProvider } from "invest-ui";
+import { ConfirmProvider, ToastProvider } from "strata";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { createClient } from "@/lib/supabase/server";

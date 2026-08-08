@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import { useConfirm, useToast } from "invest-ui";
+import { useConfirm, useToast } from "strata";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
