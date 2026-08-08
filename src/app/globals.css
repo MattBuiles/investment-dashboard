@@ -47,6 +47,19 @@
   :root:not([data-theme="light"]) { color-scheme: dark; }
 }
 
+/* Borde más suave SOLO en claro: sobre tarjetas blancas el borde por defecto
+ * (#e4e4e7) se ve pesado con muchas cards apiladas. En oscuro se deja igual. */
+:root[data-theme="light"] {
+  --border: color-mix(in oklab, var(--iv-border) 45%, var(--iv-surface));
+  --glass-border: color-mix(in oklab, var(--iv-border) 45%, var(--iv-surface));
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --border: color-mix(in oklab, var(--iv-border) 45%, var(--iv-surface));
+    --glass-border: color-mix(in oklab, var(--iv-border) 45%, var(--iv-surface));
+  }
+}
+
 html, body {
   background: var(--background);
   color: var(--foreground);
