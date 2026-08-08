@@ -10,7 +10,7 @@ import {
   type Account,
   type Holding,
 } from "@/lib/portfolio";
-import { Snowflake } from "invest-ui";
+import { Snowflake } from "strata";
 import { portfolioSnowflake } from "@/lib/agent-signals";
 import { takeDailySnapshot } from "@/lib/snapshots";
 import { fetchFxRates } from "@/lib/fx";

@@ -1,6 +1,6 @@
 "use client";
 
-import { Tabs, type TabDef } from "invest-ui";
+import { Tabs, type TabDef } from "strata";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   CDT_TERMS,

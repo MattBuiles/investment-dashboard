@@ -1,8 +1,8 @@
 @import "tailwindcss";
-@import "invest-ui/theme.css";
-@source "../../node_modules/invest-ui/src";
+@import "strata/theme.css";
+@source "../../node_modules/strata/src";
 
-/* Bridge: los tokens del dashboard apuntan a la paleta de invest-ui (jade,
+/* Bridge: los tokens del dashboard apuntan a la paleta de strata (jade,
  * claro+oscuro). Restylea sin reescribir cada componente. */
 :root {
   --background: var(--iv-bg);

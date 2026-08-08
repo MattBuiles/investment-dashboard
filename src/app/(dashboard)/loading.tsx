@@ -1,4 +1,4 @@
-import { Skeleton } from "invest-ui";
+import { Skeleton } from "strata";
 
 export default function Loading() {
   return (

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import { useConfirm, useToast } from "invest-ui";
+import { useConfirm, useToast } from "strata";
 import { formatCurrency } from "@/lib/utils";
 import { CustomForm, type CustomInitial } from "./custom-form";
 import { deleteCustom } from "./actions";

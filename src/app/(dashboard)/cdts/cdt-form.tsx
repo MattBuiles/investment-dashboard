@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
-import { useToast } from "invest-ui";
+import { useToast } from "strata";
 import { Button } from "@/components/ui/button";
 import { createCdt, updateCdt, type CdtFormState } from "./actions";
 import {

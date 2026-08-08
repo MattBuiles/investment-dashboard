@@ -14,7 +14,7 @@ import {
   Compass,
   X,
 } from "lucide-react";
-import { ThemeToggle } from "invest-ui";
+import { ThemeToggle } from "strata";
 import { cn } from "@/lib/utils";
 import { marketAgentUrl } from "@/lib/agent-signals";
 import { signOut } from "@/app/(auth)/login/actions";
