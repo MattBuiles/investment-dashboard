@@ -14,6 +14,7 @@ import {
 import { ThemeToggle } from "strata";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "./sign-out-button";
+import { FeedbackButton } from "@/components/feedback/feedback-button";
 
 // market-agent (app hermana de análisis/decisión). URL por env, con fallback.
 const MARKET_AGENT_URL =
@@ -97,6 +98,7 @@ export function Sidebar({ userEmail }: { userEmail?: string }) {
         <div className="mb-2 px-1">
           <ThemeToggle />
         </div>
+        <FeedbackButton variant="sidebar" />
         <SignOutButton />
       </div>
     </aside>
