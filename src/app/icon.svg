@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Radar">
+  <title>Radar</title>
+  <!--
+    Favicon variant, for 16-48px.
+
+    The detailed mark (radar-mark.svg) loses its three rings and its blip below
+    ~48px, and a near-black tile also disappears against dark browser chrome.
+    So this one inverts: solid violet tile, white mark, one ring, fat strokes.
+    Same idea, built to survive being 16 pixels wide.
+  -->
+  <defs>
+    <clipPath id="roundS">
+      <rect width="512" height="512" rx="114" ry="114"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#roundS)">
+    <rect width="512" height="512" fill="#6d28d9"/>
+
+    <!-- Single ring, heavy enough to hold at 16px. -->
+    <circle cx="256" cy="256" r="150" fill="none" stroke="#ffffff" stroke-opacity="0.42" stroke-width="30"/>
+
+    <!-- Sweep, thick and full-length. -->
+    <path d="M256 256 L256 78" stroke="#ffffff" stroke-width="34" stroke-linecap="round"/>
+
+    <!-- Blip, oversized so it reads as a second element rather than noise. -->
+    <circle cx="366" cy="150" r="42" fill="#ffffff"/>
+
+    <circle cx="256" cy="256" r="30" fill="#ffffff"/>
+  </g>
+</svg>
