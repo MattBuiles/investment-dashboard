@@ -9,6 +9,7 @@ import {
   LineChart,
   Sparkles,
   Menu,
+  MessageSquarePlus,
   Settings,
   LogOut,
   Compass,
@@ -18,6 +19,7 @@ import { ThemeToggle } from "strata";
 import { cn } from "@/lib/utils";
 import { marketAgentUrl } from "@/lib/agent-signals";
 import { signOut } from "@/app/(auth)/login/actions";
+import { FeedbackModal } from "@/components/feedback/feedback-modal";
 
 const nav = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
@@ -29,6 +31,17 @@ const nav = [
 export function MobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+
+  const pageUrl =
+    typeof window !== "undefined"
+      ? window.location.pathname + window.location.search
+      : "/";
+
+  function openFeedback() {
+    setOpen(false);
+    setFeedbackOpen(true);
+  }
 
   return (
     <>
@@ -61,6 +74,13 @@ export function MobileNav() {
               >
                 <Compass className="size-4" /> Análisis ↗
               </a>
+              <button
+                type="button"
+                onClick={openFeedback}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-[var(--surface-2)]"
+              >
+                <MessageSquarePlus className="size-4" /> Feedback
+              </button>
               <div className="px-1 py-1">
                 <ThemeToggle />
               </div>
@@ -76,6 +96,12 @@ export function MobileNav() {
           </div>
         </div>
       )}
+
+      <FeedbackModal
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
+        pageUrl={pageUrl}
+      />
 
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--surface)]/90 backdrop-blur-xl">
         <ul className="grid grid-cols-5">
