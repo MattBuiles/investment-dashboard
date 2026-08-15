@@ -19,8 +19,21 @@ const noopResult: RateLimitResult = {
   reset: 0,
 };
 
+const failClosedResult: RateLimitResult = {
+  success: false,
+  limit: 0,
+  remaining: 0,
+  reset: 0,
+};
+
 function createNoopLimiter(): (identifier: string) => Promise<RateLimitResult> {
   return async () => noopResult;
+}
+
+function createFailClosedLimiter(): (
+  identifier: string
+) => Promise<RateLimitResult> {
+  return async () => failClosedResult;
 }
 
 export function getFeedbackRateLimiter(): (
@@ -32,6 +45,15 @@ export function getFeedbackRateLimiter(): (
     url = getUpstashRedisUrl();
     token = getUpstashRedisToken();
   } catch {
+    if (process.env.NODE_ENV === "production") {
+      // FAIL-CLOSED en producción: si Upstash no está configurado, no se
+      // acepta el request. Evita spam + costo de Resend si prod arrancó
+      // sin las env vars requeridas.
+      console.error(
+        "[rate-limit] PRODUCCIÓN sin UPSTASH_REDIS_REST_URL/TOKEN. Rechazando requests en \"feedback\" (fail-closed)."
+      );
+      return createFailClosedLimiter();
+    }
     if (process.env.NODE_ENV !== "test") {
       console.warn(
         "[rate-limit] UPSTASH_REDIS_REST_URL/TOKEN ausente. Rate limiting deshabilitado para \"feedback\"."
@@ -41,6 +63,12 @@ export function getFeedbackRateLimiter(): (
   }
 
   if (!url.startsWith("https://")) {
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        "[rate-limit] PRODUCCIÓN con UPSTASH_REDIS_REST_URL no-https. Rechazando requests en \"feedback\" (fail-closed)."
+      );
+      return createFailClosedLimiter();
+    }
     if (process.env.NODE_ENV !== "test") {
       console.warn(
         "[rate-limit] UPSTASH_REDIS_REST_URL inválida (debe ser https://). Rate limiting deshabilitado para \"feedback\"."

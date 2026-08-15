@@ -103,6 +103,36 @@ describe('rate-limit (feedback)', () => {
     expect(warn).toHaveBeenCalled()
   })
 
+  it('production sin env vars => fail-closed (success:false => 429)', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const env = await import('@/lib/env')
+    vi.mocked(env.getUpstashRedisUrl).mockImplementation(() => {
+      throw new Error('Missing required env var: UPSTASH_REDIS_REST_URL.')
+    })
+    vi.mocked(env.getUpstashRedisToken).mockImplementation(() => {
+      throw new Error('Missing required env var: UPSTASH_REDIS_REST_TOKEN.')
+    })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rl = await import('@/lib/rate-limit')
+    const limiter = rl.getFeedbackRateLimiter()
+    const r = await limiter('user-1')
+    expect(r.success).toBe(false)
+    expect(error).toHaveBeenCalled()
+  })
+
+  it('production con URL no-https => fail-closed', async () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    const env = await import('@/lib/env')
+    vi.mocked(env.getUpstashRedisUrl).mockReturnValue('http://insecure.example.com')
+    vi.mocked(env.getUpstashRedisToken).mockReturnValue('token')
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const rl = await import('@/lib/rate-limit')
+    const limiter = rl.getFeedbackRateLimiter()
+    const r = await limiter('user-1')
+    expect(r.success).toBe(false)
+    expect(error).toHaveBeenCalled()
+  })
+
   it('uses sliding window of 5 per 1 day keyed by user id', async () => {
     const env = await import('@/lib/env')
     vi.mocked(env.getUpstashRedisUrl).mockReturnValue('https://example.upstash.io')
