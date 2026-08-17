@@ -17,6 +17,7 @@ import {
 import {
   earliestStart,
   projectSeries,
+  reconstructBreakdown,
   reconstructSeries,
   type Transaction,
 } from "@/lib/history";
@@ -137,6 +138,28 @@ export default async function OverviewPage() {
 
   const series = { accrued: buildSeries(true), principal: buildSeries(false) };
 
+  const buildBreakdown = (accrued: boolean) => ({
+    recentDaily: reconstructBreakdown(accounts, holdings, transactions, fx, {
+      from: recentFrom,
+      to: today,
+      granularity: "daily" as const,
+      baseCurrency,
+      accrued,
+    }),
+    fullWeekly: reconstructBreakdown(accounts, holdings, transactions, fx, {
+      from: earliest,
+      to: today,
+      granularity: "weekly" as const,
+      baseCurrency,
+      accrued,
+    }),
+  });
+
+  const breakdown = {
+    accrued: buildBreakdown(true),
+    principal: buildBreakdown(false),
+  };
+
   return (
     <div className="px-6 py-8 md:px-10 md:py-12 space-y-10">
       <header>
@@ -172,6 +195,7 @@ export default async function OverviewPage() {
               : "Custom holdings",
         }}
         series={series}
+        breakdown={breakdown}
       />
 
       {agentSignals.length > 0 && (

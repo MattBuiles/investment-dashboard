@@ -11,6 +11,7 @@ import {
   growthSummary,
   projectSeries,
   rangeFrom,
+  reconstructBreakdown,
   reconstructSeries,
 } from "./history";
 
@@ -137,6 +138,22 @@ describe("reconstructSeries", () => {
       accrued: true,
     });
     expect(s[s.length - 1]!.value).toBeCloseTo(1_096_000, 0);
+  });
+});
+
+describe("reconstructBreakdown", () => {
+  it("splits value by account category", () => {
+    const s = reconstructBreakdown([cdt(), custom()], noHoldings, noTxs, fx, {
+      from: parseISO("2025-06-01"),
+      to: parseISO("2025-06-01"),
+      granularity: "daily",
+      baseCurrency: "COP",
+      accrued: false,
+    });
+    const p = s[0]!;
+    expect(p.cdt).toBeCloseTo(1_000_000, 0);
+    expect(p.custom).toBeCloseTo(500_000, 0);
+    expect(p.brokerage).toBe(0);
   });
 });
 
