@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { parseISO } from "date-fns";
 import {
   Area,
   AreaChart,
@@ -9,76 +11,192 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { Stat } from "strata";
+import { Button } from "@/components/ui/button";
+import { formatCurrency, formatPercent } from "@/lib/utils";
+import {
+  growthSummary,
+  rangeFrom,
+  toYMD,
+  type Range,
+  type SeriesPoint,
+} from "@/lib/history";
 
-type Point = {
-  date: string;
-  value: number;
+export type ChartSeries = {
+  recentDaily: SeriesPoint[];
+  fullWeekly: SeriesPoint[];
+  projected: SeriesPoint[];
 };
 
-export function PortfolioChart({ data }: { data: Point[] }) {
-  if (data.length < 2) {
-    return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--muted)]">
-        {data.length === 0
-          ? "Aún no hay historial. Vuelve mañana."
-          : "Necesitas al menos 2 días para graficar."}
-      </div>
-    );
-  }
+const RANGES: { id: Range; label: string }[] = [
+  { id: "1M", label: "1M" },
+  { id: "3M", label: "3M" },
+  { id: "1Y", label: "1A" },
+  { id: "MAX", label: "Máx" },
+];
+
+type Row = { date: string; value: number | null; projected: number | null };
+
+export function PortfolioChart({
+  series,
+  currency,
+}: {
+  series: ChartSeries;
+  currency: string;
+}) {
+  const [range, setRange] = useState<Range>("3M");
+  const [showProjection, setShowProjection] = useState(false);
+
+  const source =
+    range === "1M" || range === "3M" ? series.recentDaily : series.fullWeekly;
+
+  const observed = useMemo(() => {
+    if (source.length === 0) return [];
+    const earliest = parseISO(source[0]!.date);
+    const to = parseISO(source[source.length - 1]!.date);
+    const fromStr = toYMD(rangeFrom(range, to, earliest));
+    return source.filter((p) => p.date >= fromStr);
+  }, [source, range]);
+
+  const hasProjection = series.projected.length > 1;
+
+  const rows: Row[] = useMemo(() => {
+    const base: Row[] = observed.map((p) => ({
+      date: p.date,
+      value: p.value,
+      projected: null,
+    }));
+    if (showProjection && hasProjection && base.length > 0) {
+      // connect the two areas at the boundary
+      base[base.length - 1]!.projected = base[base.length - 1]!.value;
+      const boundary = base[base.length - 1]!.date;
+      for (const p of series.projected) {
+        if (p.date <= boundary) continue;
+        base.push({ date: p.date, value: null, projected: p.value });
+      }
+    }
+    return base;
+  }, [observed, showProjection, hasProjection, series.projected]);
+
+  const growth = useMemo(() => growthSummary(observed), [observed]);
 
   return (
-    <div className="h-64 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.4} />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-          <XAxis
-            dataKey="date"
-            stroke="var(--muted)"
-            fontSize={11}
-            tickLine={false}
-            axisLine={false}
-            minTickGap={24}
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-full border border-[var(--border)] p-1">
+          {RANGES.map((r) => (
+            <Button
+              key={r.id}
+              size="sm"
+              variant={range === r.id ? "primary" : "ghost"}
+              aria-pressed={range === r.id}
+              onClick={() => setRange(r.id)}
+              className="h-8 px-3"
+            >
+              {r.label}
+            </Button>
+          ))}
+        </div>
+        {hasProjection && (
+          <Button
+            size="sm"
+            variant={showProjection ? "primary" : "secondary"}
+            aria-pressed={showProjection}
+            onClick={() => setShowProjection((v) => !v)}
+            className="h-8 px-3"
+          >
+            Proyección
+          </Button>
+        )}
+      </div>
+
+      {observed.length >= 2 && (
+        <div className="grid grid-cols-3 gap-3">
+          <Stat
+            label="Crecimiento"
+            value={formatCurrency(growth.absolute, currency)}
           />
-          <YAxis
-            stroke="var(--muted)"
-            fontSize={11}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v) =>
-              v >= 1_000_000
-                ? `${(v / 1_000_000).toFixed(1)}M`
-                : v >= 1_000
-                  ? `${(v / 1_000).toFixed(0)}k`
-                  : String(v)
-            }
-            width={50}
-          />
-          <Tooltip
-            contentStyle={{
-              background: "var(--surface)",
-              border: "1px solid var(--border)",
-              borderRadius: 12,
-              fontSize: 12,
-            }}
-            labelStyle={{ color: "var(--muted)" }}
-            formatter={(v) => [formatCurrency(Number(v ?? 0)), "Total"]}
-          />
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke="var(--accent)"
-            strokeWidth={2}
-            fill="url(#portfolioGradient)"
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+          <Stat label="Variación" value={formatPercent(growth.totalPct)} />
+          <Stat label="Anualizado (CAGR)" value={formatPercent(growth.cagr)} />
+        </div>
+      )}
+
+      {observed.length < 2 ? (
+        <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-[var(--border)] text-sm text-[var(--muted)]">
+          {observed.length === 0
+            ? "Aún no hay historial para este rango."
+            : "Necesitas al menos 2 puntos para graficar."}
+        </div>
+      ) : (
+        <div className="h-64 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={rows} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                stroke="var(--muted)"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                minTickGap={24}
+              />
+              <YAxis
+                stroke="var(--muted)"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) =>
+                  v >= 1_000_000
+                    ? `${(v / 1_000_000).toFixed(1)}M`
+                    : v >= 1_000
+                      ? `${(v / 1_000).toFixed(0)}k`
+                      : String(v)
+                }
+                width={50}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+                labelStyle={{ color: "var(--muted)" }}
+                formatter={(v, name) => [
+                  formatCurrency(Number(v ?? 0), currency),
+                  name === "projected" ? "Proyección" : "Total",
+                ]}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="var(--accent)"
+                strokeWidth={2}
+                fill="url(#portfolioGradient)"
+                connectNulls={false}
+              />
+              {showProjection && hasProjection && (
+                <Area
+                  type="monotone"
+                  dataKey="projected"
+                  stroke="var(--accent)"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  fill="url(#portfolioGradient)"
+                  fillOpacity={0.35}
+                  connectNulls
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }

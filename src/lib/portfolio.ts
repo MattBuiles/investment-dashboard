@@ -1,5 +1,6 @@
 import type { Tables } from "@/types/database";
 import { convertAmount, type FxRates } from "./fx";
+import { cdtValueAt } from "./history";
 
 export type Account = Tables<"accounts">;
 export type Holding = Tables<"holdings">;
@@ -45,6 +46,36 @@ export function accountValueIn(
     toCurrency,
     fx
   );
+}
+
+/** Like accountValue, but a CDT accrues interest to today instead of showing
+ *  flat principal. Non-CDT accounts are unchanged. */
+export function accountValueAccrued(
+  account: Account,
+  holdings: Holding[]
+): number {
+  if (account.kind === "cdt") {
+    return cdtValueAt(account, new Date(), { accrued: true });
+  }
+  return accountValue(account, holdings);
+}
+
+/** Currency-converted variant of accountValueAccrued. */
+export function accountValueInAccrued(
+  account: Account,
+  holdings: Holding[],
+  toCurrency: string,
+  fx: FxRates
+): number {
+  if (account.kind === "cdt") {
+    return convertAmount(
+      cdtValueAt(account, new Date(), { accrued: true }),
+      account.currency,
+      toCurrency,
+      fx
+    );
+  }
+  return accountValueIn(account, holdings, toCurrency, fx);
 }
 
 export function buildAllocation(
