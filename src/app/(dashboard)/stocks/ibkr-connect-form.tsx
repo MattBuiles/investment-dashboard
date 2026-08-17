@@ -25,20 +25,39 @@ export function IbkrConnectForm({ onDone }: { onDone?: () => void }) {
         </summary>
         <ol className="mt-3 list-decimal space-y-1.5 pl-4">
           <li>
-            IBKR Client Portal → <b>Performance &amp; Reports → Flex Queries</b>.
+            IBKR Client Portal → <b>Performance &amp; Reports → Flex Queries</b>{" "}
+            → crea un <b>Activity Flex Query</b>.
           </li>
           <li>
-            Crea un <b>Activity Flex Query</b> e incluye la sección{" "}
-            <b>Open Positions</b> con los campos: Symbol, Quantity (position),
-            Cost Basis Price, Mark Price, Currency, Asset Class y Conid.
-            Formato: <b>XML</b>. Guarda la query.
+            Sección <b>Open Positions</b> (posiciones) → campos: Symbol,
+            Quantity, <b>Cost Basis Price</b>, <b>Mark Price</b>, Currency, Asset
+            Class, Conid.{" "}
+            <span className="text-[var(--muted)]">
+              (Mark Price = valor actual; sin él no hay rendimiento.)
+            </span>
+          </li>
+          <li>
+            Sección <b>Trades</b> → campos: Trade ID, Symbol, Buy/Sell, Trade
+            Date, Quantity, Trade Price, <b>Net Cash</b>, Currency.{" "}
+            <span className="text-[var(--muted)]">
+              (Necesaria para transacciones y &ldquo;aportes vs rendimiento&rdquo;.)
+            </span>
+          </li>
+          <li>
+            <b>Delivery Configuration</b> → Format: <b>XML</b> · Period:{" "}
+            <b>Last 365 Days</b> (o más amplio; las posiciones quedan al día
+            igual).
+          </li>
+          <li>
+            <b>General Configuration</b> → Date Format: <b>yyyyMMdd</b> (default).
+            Guarda la query.
           </li>
           <li>
             Copia el <b>Query ID</b> (icono ℹ️ Info a la izquierda de la query).
           </li>
           <li>
-            En la misma página, sección <b>Flex Web Service Configuration</b> →
-            icono Configurar → marca <b>Flex Web Service Status</b> → Save.
+            Sección <b>Flex Web Service Configuration</b> → Configurar → marca{" "}
+            <b>Flex Web Service Status</b> → Save.
           </li>
           <li>
             <b>Generate a New Token</b> → elige expiración (hasta 1 año) →{" "}

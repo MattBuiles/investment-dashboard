@@ -32,7 +32,7 @@ export function IbkrConnectCard({ additional = false }: { additional?: boolean }
               <p className="mt-1 text-sm text-[var(--muted)]">
                 {additional
                   ? "Conecta una cuenta IBKR adicional (otro Flex Query)."
-                  : "Conecta IBKR (Flex Web Service) para sincronizar posiciones automáticamente."}
+                  : "Conecta IBKR (Flex Web Service) para sincronizar posiciones y transacciones automáticamente."}
               </p>
             </div>
             <Button size="sm" variant={additional ? "secondary" : "primary"} onClick={() => setAdding(true)}>
