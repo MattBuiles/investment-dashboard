@@ -16,6 +16,29 @@ export function holdingMarketValue(h: Holding): number {
   return Number(h.quantity) * Number(price);
 }
 
+/** Cost basis of a holding: what was spent (quantity × average cost). */
+export function holdingCost(h: Holding): number {
+  return Number(h.quantity) * Number(h.avg_cost);
+}
+
+export type Pnl = { cost: number; value: number; gain: number; gainPct: number };
+
+/** Cost vs current value and the resulting gain/loss for a holding. */
+export function holdingPnl(h: Holding): Pnl {
+  const cost = holdingCost(h);
+  const value = holdingMarketValue(h);
+  const gain = value - cost;
+  return { cost, value, gain, gainPct: cost > 0 ? gain / cost : 0 };
+}
+
+/** Aggregate P&L across a set of holdings (same currency assumed). */
+export function holdingsPnl(holdings: Holding[]): Pnl {
+  const cost = holdings.reduce((s, h) => s + holdingCost(h), 0);
+  const value = holdings.reduce((s, h) => s + holdingMarketValue(h), 0);
+  const gain = value - cost;
+  return { cost, value, gain, gainPct: cost > 0 ? gain / cost : 0 };
+}
+
 export function accountValue(account: Account, holdings: Holding[]): number {
   if (account.kind === "brokerage") {
     return holdings

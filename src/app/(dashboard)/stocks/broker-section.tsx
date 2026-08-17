@@ -5,8 +5,13 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { useConfirm, useToast } from "strata";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
-import { holdingMarketValue, type Holding } from "@/lib/portfolio";
+import { formatCurrency, formatPercent } from "@/lib/utils";
+import {
+  holdingMarketValue,
+  holdingPnl,
+  holdingsPnl,
+  type Holding,
+} from "@/lib/portfolio";
 import { HoldingForm } from "./holding-form";
 import { BrokerForm } from "./broker-form";
 import { deleteHolding, deleteBroker } from "./actions";
@@ -36,6 +41,9 @@ export function BrokerSection({
   const toast = useToast();
 
   const total = holdings.reduce((s, h) => s + holdingMarketValue(h), 0);
+  const pnl = holdingsPnl(holdings);
+  const gainColor = (g: number) =>
+    g >= 0 ? "var(--positive)" : "var(--negative)";
 
   return (
     <Card>
@@ -52,6 +60,19 @@ export function BrokerSection({
               <p className="mt-1 text-2xl font-semibold tabular-nums">
                 {formatCurrency(total, broker.currency)}
               </p>
+              {pnl.cost > 0 && (
+                <p className="mt-1 text-xs tabular-nums">
+                  <span style={{ color: gainColor(pnl.gain) }}>
+                    {pnl.gain >= 0 ? "+" : ""}
+                    {formatCurrency(pnl.gain, broker.currency)} (
+                    {formatPercent(pnl.gainPct)})
+                  </span>
+                  <span className="text-[var(--muted)]">
+                    {" "}
+                    · costo {formatCurrency(pnl.cost, broker.currency)}
+                  </span>
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="secondary" onClick={() => setAdding((v) => !v)}>
@@ -132,6 +153,7 @@ export function BrokerSection({
                   </li>
                 );
               }
+              const p = holdingPnl(h);
               return (
                 <li key={h.id} className="flex items-center gap-3 py-3">
                   <div className="flex-1">
@@ -140,14 +162,22 @@ export function BrokerSection({
                       <AgentSignalChip symbol={h.symbol} signal={signals[h.symbol]} />
                     </div>
                     <p className="text-xs text-[var(--muted)]">
-                      {Number(h.quantity).toLocaleString()} @ {formatCurrency(Number(h.avg_cost), h.currency)}
+                      {Number(h.quantity).toLocaleString()} @ {formatCurrency(Number(h.avg_cost), h.currency)} · costo {formatCurrency(p.cost, h.currency)}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="font-medium tabular-nums">
-                      {formatCurrency(holdingMarketValue(h), h.currency)}
+                      {formatCurrency(p.value, h.currency)}
                     </p>
-                    <p className="text-xs text-[var(--muted)]">{h.currency}</p>
+                    {p.cost > 0 && (
+                      <p
+                        className="text-xs tabular-nums"
+                        style={{ color: gainColor(p.gain) }}
+                      >
+                        {p.gain >= 0 ? "+" : ""}
+                        {formatCurrency(p.gain, h.currency)} ({formatPercent(p.gainPct)})
+                      </p>
+                    )}
                   </div>
                   <button
                     type="button"
