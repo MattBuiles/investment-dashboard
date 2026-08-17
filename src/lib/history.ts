@@ -25,6 +25,17 @@ export type Granularity = "daily" | "weekly";
 
 export type ValueOpts = { accrued?: boolean };
 
+/** Retención en la fuente sobre rendimientos financieros (CDT) en Colombia. */
+export const RETEFUENTE_RATE_DEFAULT = 0.04;
+
+/** Tasa de retefuente del CDT: override opcional en accounts.metadata
+ *  (`{ "retefuente_rate": 0.04 }`, 0 = exento), si no el 4% estándar. */
+export function retefuenteRate(account: Account): number {
+  const meta = account.metadata as { retefuente_rate?: unknown } | null;
+  const v = meta?.retefuente_rate;
+  return typeof v === "number" && v >= 0 && v <= 1 ? v : RETEFUENTE_RATE_DEFAULT;
+}
+
 // ---------------------------------------------------------------------------
 // Date helpers
 // ---------------------------------------------------------------------------
@@ -82,7 +93,8 @@ function buildAxis(from: Date, to: Date, granularity: Granularity): Date[] {
 
 /** CDT value at `date` in the account currency.
  *  accrued=false → flat principal (from start). accrued=true → compounded at
- *  the effective-annual rate, capped at maturity (flat afterward). 0 before start. */
+ *  the effective-annual rate, capped at maturity (flat afterward), NET of
+ *  retención en la fuente on the interest. 0 before start. */
 export function cdtValueAt(
   account: Account,
   date: Date,
@@ -105,7 +117,9 @@ export function cdtValueAt(
 
   const elapsedYears = Math.max(differenceInCalendarDays(date, start) / 365, 0);
   const accrualYears = Math.min(elapsedYears, termYears);
-  return P * Math.pow(1 + r, accrualYears);
+  const gross = P * Math.pow(1 + r, accrualYears);
+  // Net of retención en la fuente: only the interest is taxed, not the principal.
+  return P + (gross - P) * (1 - retefuenteRate(account));
 }
 
 /** Inline of portfolio.holdingMarketValue to avoid a runtime import cycle. */

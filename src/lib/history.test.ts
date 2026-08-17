@@ -58,13 +58,22 @@ describe("cdtValueAt", () => {
     expect(cdtValueAt(cdt(), parseISO("2025-01-01"))).toBeCloseTo(1_000_000, 0);
   });
 
-  it("compounds at the effective-annual rate after one year", () => {
-    expect(cdtValueAt(cdt(), parseISO("2026-01-01"))).toBeCloseTo(1_100_000, 0);
+  it("compounds after one year, net of 4% retefuente on the interest", () => {
+    // gross interest 100,000 → net 96,000 (retefuente 4%)
+    expect(cdtValueAt(cdt(), parseISO("2026-01-01"))).toBeCloseTo(1_096_000, 0);
   });
 
-  it("caps accrual at maturity (flat afterward)", () => {
+  it("caps accrual at maturity (flat afterward), net of retefuente", () => {
     // term is 12 months, so two years out still = one year of accrual
-    expect(cdtValueAt(cdt(), parseISO("2027-01-01"))).toBeCloseTo(1_100_000, 0);
+    expect(cdtValueAt(cdt(), parseISO("2027-01-01"))).toBeCloseTo(1_096_000, 0);
+  });
+
+  it("honors a per-CDT retefuente override in metadata (0 = exento)", () => {
+    const exento = cdt({ metadata: { retefuente_rate: 0 } });
+    expect(cdtValueAt(exento, parseISO("2026-01-01"))).toBeCloseTo(1_100_000, 0);
+    const alto = cdt({ metadata: { retefuente_rate: 0.1 } });
+    // interest 100,000 → net 90,000
+    expect(cdtValueAt(alto, parseISO("2026-01-01"))).toBeCloseTo(1_090_000, 0);
   });
 
   it("returns 0 before the start date", () => {
@@ -119,7 +128,7 @@ describe("reconstructSeries", () => {
     expect(at("2025-06-01")).toBeCloseTo(1_500_000, 0);
   });
 
-  it("sums accrued CDT value at the end of the window", () => {
+  it("sums accrued CDT value (net of retefuente) at the end of the window", () => {
     const s = reconstructSeries([cdt()], noHoldings, noTxs, fx, {
       from: parseISO("2025-01-01"),
       to: parseISO("2026-01-01"),
@@ -127,7 +136,7 @@ describe("reconstructSeries", () => {
       baseCurrency: "COP",
       accrued: true,
     });
-    expect(s[s.length - 1]!.value).toBeCloseTo(1_100_000, 0);
+    expect(s[s.length - 1]!.value).toBeCloseTo(1_096_000, 0);
   });
 });
 

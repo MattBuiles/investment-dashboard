@@ -14,6 +14,7 @@ export type CustomInitial = {
   institution: string | null;
   currency: string;
   principal: number | string | null;
+  start_date?: string | null;
   notes?: string;
 };
 
@@ -61,9 +62,15 @@ export function CustomForm({
           <label htmlFor="currency" className="text-sm font-medium">Currency</label>
           <input id="currency" name="currency" required maxLength={3} minLength={3} className={inputCls} defaultValue={initial?.currency ?? "USD"} />
         </div>
-        <div className="col-span-2">
+        <div>
           <label htmlFor="principal" className="text-sm font-medium">Valor actual</label>
           <input id="principal" name="principal" type="number" step="0.01" min="0" required className={inputCls} defaultValue={initial?.principal ?? ""} />
+        </div>
+        <div>
+          <label htmlFor="start_date" className="text-sm font-medium">
+            Fecha de adquisición <span className="text-[var(--muted)]">(opcional)</span>
+          </label>
+          <input id="start_date" name="start_date" type="date" className={inputCls} defaultValue={initial?.start_date ?? ""} />
         </div>
         <div className="col-span-2">
           <label htmlFor="notes" className="text-sm font-medium">Notas</label>
