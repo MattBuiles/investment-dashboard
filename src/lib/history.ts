@@ -20,6 +20,12 @@ import type { Tables } from "@/types/database";
 export type Transaction = Tables<"transactions">;
 
 export type SeriesPoint = { date: string; value: number; projected?: boolean };
+export type BreakdownPoint = {
+  date: string;
+  cdt: number;
+  brokerage: number;
+  custom: number;
+};
 export type Range = "1M" | "3M" | "1Y" | "MAX";
 export type Granularity = "daily" | "weekly";
 
@@ -72,6 +78,18 @@ export function rangeFrom(range: Range, to: Date, earliest: Date): Date {
         ? subMonths(to, 3)
         : subYears(to, 1);
   return dfMax([back, earliest]);
+}
+
+/** Slice a dated series to the given range (relative to its last point). */
+export function sliceByDate<T extends { date: string }>(
+  source: T[],
+  range: Range
+): T[] {
+  if (source.length === 0) return source;
+  const earliest = parseISO(source[0]!.date);
+  const to = parseISO(source[source.length - 1]!.date);
+  const fromStr = toYMD(rangeFrom(range, to, earliest));
+  return source.filter((p) => p.date >= fromStr);
 }
 
 function buildAxis(from: Date, to: Date, granularity: Granularity): Date[] {
@@ -215,6 +233,34 @@ export function reconstructSeries(
       0
     );
     return { date: toYMD(d), value };
+  });
+}
+
+/** Historical value split by account category, in base currency. */
+export function reconstructBreakdown(
+  accounts: Account[],
+  holdings: Holding[],
+  transactions: Transaction[],
+  fx: FxRates,
+  opts: ReconstructOpts
+): BreakdownPoint[] {
+  const axis = buildAxis(opts.from, opts.to, opts.granularity);
+  return axis.map((d) => {
+    let cdt = 0;
+    let brokerage = 0;
+    let custom = 0;
+    for (const a of accounts) {
+      const v = convertAmount(
+        accountValueAt(a, holdings, transactions, d, { accrued: opts.accrued }),
+        a.currency,
+        opts.baseCurrency,
+        fx
+      );
+      if (a.kind === "cdt") cdt += v;
+      else if (a.kind === "brokerage") brokerage += v;
+      else custom += v;
+    }
+    return { date: toYMD(d), cdt, brokerage, custom };
   });
 }
 

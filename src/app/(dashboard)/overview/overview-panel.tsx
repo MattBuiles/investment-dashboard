@@ -7,10 +7,13 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import type { Range } from "@/lib/history";
 import { PortfolioChart, type ChartSeries } from "./portfolio-chart";
+import { CompositionChart, type BreakdownSeries } from "./composition-chart";
+import { ContributionsChart } from "./contributions-chart";
 
 type Mode = "accrued" | "principal";
-
+type View = "valor" | "composicion" | "aportes";
 type ModeValue = { accrued: number; principal: number };
 
 export type OverviewPanelProps = {
@@ -22,10 +25,53 @@ export type OverviewPanelProps = {
   stock: { total: number; count: number; hint: string };
   custom: { total: number; count: number; hint: string };
   series: { accrued: ChartSeries; principal: ChartSeries };
+  breakdown: { accrued: BreakdownSeries; principal: BreakdownSeries };
 };
+
+function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { id: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-full border border-[var(--border)] p-1">
+      {options.map((o) => (
+        <Button
+          key={o.id}
+          size="sm"
+          variant={value === o.id ? "primary" : "ghost"}
+          aria-pressed={value === o.id}
+          onClick={() => onChange(o.id)}
+          className="h-8 px-3"
+        >
+          {o.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+const RANGES: { id: Range; label: string }[] = [
+  { id: "1M", label: "1M" },
+  { id: "3M", label: "3M" },
+  { id: "1Y", label: "1A" },
+  { id: "MAX", label: "Máx" },
+];
+
+const VIEWS: { id: View; label: string }[] = [
+  { id: "valor", label: "Valor" },
+  { id: "composicion", label: "Composición" },
+  { id: "aportes", label: "Aportes vs rend." },
+];
 
 export function OverviewPanel(props: OverviewPanelProps) {
   const [mode, setMode] = useState<Mode>("accrued");
+  const [range, setRange] = useState<Range>("3M");
+  const [view, setView] = useState<View>("valor");
 
   const grand = props.grandTotal[mode];
   const cards = [
@@ -81,26 +127,14 @@ export function OverviewPanel(props: OverviewPanelProps) {
             </p>
           </div>
 
-          <div className="inline-flex rounded-full border border-[var(--border)] p-1">
-            <Button
-              size="sm"
-              variant={mode === "accrued" ? "primary" : "ghost"}
-              aria-pressed={mode === "accrued"}
-              onClick={() => setMode("accrued")}
-              className="h-8 px-3"
-            >
-              Con interés
-            </Button>
-            <Button
-              size="sm"
-              variant={mode === "principal" ? "primary" : "ghost"}
-              aria-pressed={mode === "principal"}
-              onClick={() => setMode("principal")}
-              className="h-8 px-3"
-            >
-              Principal
-            </Button>
-          </div>
+          <Segmented
+            options={[
+              { id: "accrued", label: "Con interés" },
+              { id: "principal", label: "Principal" },
+            ]}
+            value={mode}
+            onChange={setMode}
+          />
         </div>
       </GlassCard>
 
@@ -149,14 +183,34 @@ export function OverviewPanel(props: OverviewPanelProps) {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-[var(--muted)]">Evolución</h2>
-            <span className="text-xs text-[var(--muted)]">
-              {mode === "accrued" ? "con interés acumulado" : "principal (sin interés)"}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Segmented options={VIEWS} value={view} onChange={setView} />
+            <Segmented options={RANGES} value={range} onChange={setRange} />
           </div>
-          <div className="mt-4">
-            <PortfolioChart series={props.series[mode]} currency={props.baseCurrency} />
+
+          <div className="mt-5">
+            {view === "valor" && (
+              <PortfolioChart
+                series={props.series[mode]}
+                currency={props.baseCurrency}
+                range={range}
+              />
+            )}
+            {view === "composicion" && (
+              <CompositionChart
+                series={props.breakdown[mode]}
+                currency={props.baseCurrency}
+                range={range}
+              />
+            )}
+            {view === "aportes" && (
+              <ContributionsChart
+                accrued={props.series.accrued}
+                principal={props.series.principal}
+                currency={props.baseCurrency}
+                range={range}
+              />
+            )}
           </div>
         </CardContent>
       </Card>
