@@ -9,6 +9,7 @@ const customSchema = z.object({
   institution: z.string().max(120).optional().or(z.literal("")).transform((v) => v || undefined),
   currency: z.string().length(3).default("USD"),
   principal: z.coerce.number().nonnegative(),
+  start_date: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
   notes: z.string().max(500).optional().or(z.literal("")).transform((v) => v || undefined),
 });
 
@@ -40,6 +41,7 @@ export async function createCustom(
     institution: d.institution ?? null,
     currency: d.currency.toUpperCase(),
     principal: d.principal,
+    start_date: d.start_date ?? null,
     metadata: d.notes ? { notes: d.notes } : {},
   });
 
@@ -74,6 +76,7 @@ export async function updateCustom(
       institution: d.institution ?? null,
       currency: d.currency.toUpperCase(),
       principal: d.principal,
+      start_date: d.start_date ?? null,
       metadata: d.notes ? { notes: d.notes } : {},
       updated_at: new Date().toISOString(),
     })

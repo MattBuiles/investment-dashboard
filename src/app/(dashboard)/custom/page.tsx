@@ -62,6 +62,7 @@ export default async function CustomPage() {
                       institution: it.institution,
                       currency: it.currency,
                       principal: it.principal,
+                      start_date: it.start_date,
                       notes: meta?.notes,
                     }}
                   />
