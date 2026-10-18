@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   Compass,
+  Wallet,
   X,
 } from "lucide-react";
 import { ThemeToggle } from "strata";
@@ -28,7 +29,7 @@ const nav = [
   { href: "/custom", label: "Custom", icon: Sparkles },
 ];
 
-export function MobileNav() {
+export function MobileNav({ budgetUrl }: { budgetUrl?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -74,6 +75,14 @@ export function MobileNav() {
               >
                 <Compass className="size-4" /> Análisis ↗
               </a>
+              {budgetUrl && (
+                <a
+                  href={budgetUrl}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-[var(--surface-2)]"
+                >
+                  <Wallet className="size-4" /> Presupuesto ↗
+                </a>
+              )}
               <button
                 type="button"
                 onClick={openFeedback}

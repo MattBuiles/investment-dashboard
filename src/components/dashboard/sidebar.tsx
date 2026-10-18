@@ -43,7 +43,7 @@ const nav = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar({ userEmail }: { userEmail?: string }) {
+export function Sidebar({ userEmail, budgetUrl }: { userEmail?: string; budgetUrl?: string }) {
   const pathname = usePathname();
 
   return (
@@ -53,7 +53,7 @@ export function Sidebar({ userEmail }: { userEmail?: string }) {
         <span className="font-semibold tracking-tight">Investments</span>
       </Link>
 
-      {/* Switcher entre las dos apps hermanas */}
+      {/* Switcher entre las apps hermanas (Presupuesto solo para el dueño) */}
       <div className="mb-6 flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5 text-xs">
         <span className="flex-1 rounded-md bg-[var(--surface)] px-2 py-1.5 text-center font-medium">
           Rastreo
@@ -64,6 +64,14 @@ export function Sidebar({ userEmail }: { userEmail?: string }) {
         >
           Análisis ↗
         </a>
+        {budgetUrl && (
+          <a
+            href={budgetUrl}
+            className="flex-1 px-2 py-1.5 text-center text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
+          >
+            Presupuesto ↗
+          </a>
+        )}
       </div>
 
       <nav className="flex flex-1 flex-col gap-1">
