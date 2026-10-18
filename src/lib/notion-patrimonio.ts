@@ -86,13 +86,22 @@ async function updateSaldo(dataSourceId: string, name: string, value: number) {
   if (row) await notion(`/pages/${row.id}`, "PATCH", { properties: { Saldo: { number: Math.round(value) } } });
 }
 
+/** Recorre todas las páginas de usuarios hasta encontrar al dueño. */
+async function findOwner(admin: SupabaseClient<Database>) {
+  const perPage = 1000;
+  for (let page = 1; ; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    const owner = data.users.find((u) => isBudgetOwner(u.email));
+    if (owner || data.users.length < perPage) return owner ?? null;
+  }
+}
+
 export async function syncOwnerPatrimonio(admin: SupabaseClient<Database>): Promise<string> {
   const { OWNER_EMAIL, NOTION_TOKEN, NOTION_PATRIMONIO_DS, NOTION_INVERSIONES_DS } = process.env;
   if (!OWNER_EMAIL || !NOTION_TOKEN || !NOTION_PATRIMONIO_DS || !NOTION_INVERSIONES_DS) return "off";
 
-  const { data: users, error } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  if (error) throw error;
-  const owner = users.users.find((u) => isBudgetOwner(u.email));
+  const owner = await findOwner(admin);
   if (!owner) return "owner-not-found";
 
   const [accountsRes, holdingsRes, fx] = await Promise.all([
@@ -100,6 +109,8 @@ export async function syncOwnerPatrimonio(admin: SupabaseClient<Database>): Prom
     admin.from("holdings").select("*").eq("user_id", owner.id),
     fetchFxRates(),
   ]);
+  // Un error de lectura no puede convertirse en "patrimonio 0" escrito en Notion.
+  if (accountsRes.error || holdingsRes.error) throw accountsRes.error ?? holdingsRes.error;
   const p = computePatrimonio(accountsRes.data ?? [], holdingsRes.data ?? [], fx);
   if (!p) return "no-fx";
 

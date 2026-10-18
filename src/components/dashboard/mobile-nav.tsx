@@ -19,7 +19,6 @@ import {
 import { ThemeToggle } from "strata";
 import { cn } from "@/lib/utils";
 import { marketAgentUrl } from "@/lib/agent-signals";
-import { SPLITSTREAM_URL } from "@/lib/splitstream";
 import { signOut } from "@/app/(auth)/login/actions";
 import { FeedbackModal } from "@/components/feedback/feedback-modal";
 
@@ -30,7 +29,7 @@ const nav = [
   { href: "/custom", label: "Custom", icon: Sparkles },
 ];
 
-export function MobileNav({ showBudget = false }: { showBudget?: boolean }) {
+export function MobileNav({ budgetUrl }: { budgetUrl?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -76,9 +75,9 @@ export function MobileNav({ showBudget = false }: { showBudget?: boolean }) {
               >
                 <Compass className="size-4" /> Análisis ↗
               </a>
-              {showBudget && (
+              {budgetUrl && (
                 <a
-                  href={SPLITSTREAM_URL}
+                  href={budgetUrl}
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-[var(--surface-2)]"
                 >
                   <Wallet className="size-4" /> Presupuesto ↗

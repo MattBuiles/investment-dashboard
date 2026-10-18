@@ -15,7 +15,6 @@ import { ThemeToggle } from "strata";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "./sign-out-button";
 import { FeedbackButton } from "@/components/feedback/feedback-button";
-import { SPLITSTREAM_URL } from "@/lib/splitstream";
 
 // market-agent (app hermana de análisis/decisión). URL por env, con fallback.
 const MARKET_AGENT_URL =
@@ -44,7 +43,7 @@ const nav = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar({ userEmail, showBudget = false }: { userEmail?: string; showBudget?: boolean }) {
+export function Sidebar({ userEmail, budgetUrl }: { userEmail?: string; budgetUrl?: string }) {
   const pathname = usePathname();
 
   return (
@@ -65,9 +64,9 @@ export function Sidebar({ userEmail, showBudget = false }: { userEmail?: string;
         >
           Análisis ↗
         </a>
-        {showBudget && (
+        {budgetUrl && (
           <a
-            href={SPLITSTREAM_URL}
+            href={budgetUrl}
             className="flex-1 px-2 py-1.5 text-center text-[var(--muted)] transition-colors hover:text-[var(--foreground)]"
           >
             Presupuesto ↗
