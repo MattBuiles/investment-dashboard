@@ -2,6 +2,7 @@ import { ConfirmProvider, ToastProvider } from "strata";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { createClient } from "@/lib/supabase/server";
+import { isBudgetOwner } from "@/lib/splitstream";
 
 export default async function DashboardLayout({
   children,
@@ -12,14 +13,15 @@ export default async function DashboardLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const showBudget = isBudgetOwner(user?.email);
 
   return (
     <ToastProvider>
       <ConfirmProvider>
         <div className="flex min-h-screen">
-          <Sidebar userEmail={user?.email} />
+          <Sidebar userEmail={user?.email} showBudget={showBudget} />
           <main className="flex-1 pb-20 md:pb-0">{children}</main>
-          <MobileNav />
+          <MobileNav showBudget={showBudget} />
         </div>
       </ConfirmProvider>
     </ToastProvider>

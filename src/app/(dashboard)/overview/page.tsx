@@ -26,6 +26,8 @@ import { portfolioSnowflake } from "@/lib/agent-signals";
 import { takeDailySnapshot } from "@/lib/snapshots";
 import { fetchFxRates } from "@/lib/fx";
 import { OverviewPanel } from "./overview-panel";
+import { BudgetCard } from "@/components/dashboard/budget-card";
+import { isBudgetOwner } from "@/lib/splitstream";
 import type { ChartSeries } from "./portfolio-chart";
 import { AgentSignalChip } from "@/components/agent-signal-chip";
 import { marketAgentUrl, type AgentSignal } from "@/lib/agent-signals";
@@ -197,6 +199,8 @@ export default async function OverviewPage() {
         series={series}
         breakdown={breakdown}
       />
+
+      {isBudgetOwner(user?.email) && <BudgetCard />}
 
       {agentSignals.length > 0 && (
         <GlassCard className="p-6">

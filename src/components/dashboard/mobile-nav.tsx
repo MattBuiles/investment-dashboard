@@ -13,11 +13,13 @@ import {
   Settings,
   LogOut,
   Compass,
+  Wallet,
   X,
 } from "lucide-react";
 import { ThemeToggle } from "strata";
 import { cn } from "@/lib/utils";
 import { marketAgentUrl } from "@/lib/agent-signals";
+import { SPLITSTREAM_URL } from "@/lib/splitstream";
 import { signOut } from "@/app/(auth)/login/actions";
 import { FeedbackModal } from "@/components/feedback/feedback-modal";
 
@@ -28,7 +30,7 @@ const nav = [
   { href: "/custom", label: "Custom", icon: Sparkles },
 ];
 
-export function MobileNav() {
+export function MobileNav({ showBudget = false }: { showBudget?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -74,6 +76,14 @@ export function MobileNav() {
               >
                 <Compass className="size-4" /> Análisis ↗
               </a>
+              {showBudget && (
+                <a
+                  href={SPLITSTREAM_URL}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm hover:bg-[var(--surface-2)]"
+                >
+                  <Wallet className="size-4" /> Presupuesto ↗
+                </a>
+              )}
               <button
                 type="button"
                 onClick={openFeedback}

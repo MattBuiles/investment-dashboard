@@ -232,6 +232,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ss_budget: {
+        Row: {
+          available: Json
+          etf_pending: number
+          fixed_income_pending: number
+          paycheck_amount: number | null
+          paycheck_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available?: Json
+          etf_pending?: number
+          fixed_income_pending?: number
+          paycheck_amount?: number | null
+          paycheck_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available?: Json
+          etf_pending?: number
+          fixed_income_pending?: number
+          paycheck_amount?: number | null
+          paycheck_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       snapshots: {
         Row: {
           account_id: string | null

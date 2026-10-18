@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { syncConnectionAsAdmin, type SyncableConnection } from "@/lib/ibkr-sync";
+import { syncOwnerPatrimonio } from "@/lib/notion-patrimonio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,11 +43,21 @@ export async function GET(request: Request) {
   }
 
   const synced = results.filter((r) => r.ok).length;
+
+  // Después del sync de IBKR, para tener precios frescos. Un fallo de Notion no tumba el cron.
+  let notion: string;
+  try {
+    notion = await syncOwnerPatrimonio(admin);
+  } catch (e) {
+    notion = e instanceof Error ? e.message : "error";
+  }
+
   return NextResponse.json({
     ok: true,
     total: results.length,
     synced,
     failed: results.length - synced,
     results,
+    notion,
   });
 }
