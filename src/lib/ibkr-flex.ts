@@ -1,7 +1,29 @@
 import { XMLParser } from "fast-xml-parser";
 
-const FLEX_BASE = "https://gdcdyn.interactivebrokers.com/Universal/servlet";
+const FLEX_BASE = "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService";
 const FLEX_VERSION = "3";
+
+// Códigos transitorios de IBKR que vale la pena reintentar.
+export const TRANSIENT_FLEX_CODES = new Set([
+  "1001",
+  "1004",
+  "1005",
+  "1006",
+  "1007",
+  "1008",
+  "1009",
+  "1018",
+  "1019",
+  "1021",
+]);
+
+const MAX_ATTEMPTS = 4;
+const MAX_POLL_ATTEMPTS = 8;
+const POLL_INTERVAL_MS = 1500;
+const BASE_BACKOFF_MS = 1000;
+const JITTER_MS = 250;
+const MAX_BACKOFF_MS = 5000;
+const MAX_RETRY_AFTER_MS = 5000;
 
 export type FlexPosition = {
   symbol: string;
@@ -31,9 +53,12 @@ export type FlexStatementData = {
 
 export class FlexError extends Error {
   code: string;
-  constructor(code: string, message: string) {
+  retryable: boolean;
+  constructor(code: string, message: string, retryable?: boolean) {
     super(message);
     this.code = code;
+    this.retryable = retryable ?? TRANSIENT_FLEX_CODES.has(code);
+    this.name = "FlexError";
   }
 }
 
@@ -98,47 +123,105 @@ function asArray<T>(v: T | T[] | undefined): T[] {
   return Array.isArray(v) ? v : [v];
 }
 
-async function sendRequest(token: string, queryId: string): Promise<string> {
-  const url = `${FLEX_BASE}/FlexStatementService.SendRequest?t=${encodeURIComponent(token)}&q=${encodeURIComponent(queryId)}&v=${FLEX_VERSION}`;
-  const res = await fetch(url, { method: "GET", cache: "no-store" });
-  if (!res.ok) throw new FlexError("HTTP_ERROR", `Send request failed: ${res.status}`);
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  const xml = await res.text();
-  const parsed = parser.parse(xml) as FlexQueryResponse;
-  const r = parsed.FlexStatementResponse;
-  if (!r) throw new FlexError("PARSE_ERROR", "Missing FlexStatementResponse");
+// Backoff exponencial (1s, 2s, 4s...) con jitter pequeño; si IBKR envía
+// Retry-After se respeta, con tope de 5s.
+function backoffDelay(attempt: number, retryAfterMs?: number | null): number {
+  if (retryAfterMs != null) return Math.min(retryAfterMs, MAX_RETRY_AFTER_MS);
+  const exponential = BASE_BACKOFF_MS * 2 ** (attempt - 1);
+  return Math.min(exponential, MAX_BACKOFF_MS) + Math.random() * JITTER_MS;
+}
 
-  if (r.Status !== "Success") {
-    throw new FlexError(
-      r.ErrorCode ?? "FLEX_ERROR",
-      r.ErrorMessage ?? "Flex SendRequest failed"
-    );
+function parseRetryAfterMs(header: string | null): number | null {
+  if (!header) return null;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
+  const dateMs = Date.parse(header);
+  if (Number.isNaN(dateMs)) return null;
+  const delta = dateMs - Date.now();
+  return delta > 0 ? delta : 0;
+}
+
+// GET con reintentos: errores de red, HTTP 429 y 5xx se reintentan (hasta
+// `maxAttempts` en total); el resto de 4xx falla de inmediato.
+async function fetchText(url: string, label: string, maxAttempts = MAX_ATTEMPTS): Promise<string> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(url, { method: "GET", cache: "no-store" });
+    } catch {
+      if (attempt >= maxAttempts) {
+        throw new FlexError("NETWORK_ERROR", `${label} failed: network error`, true);
+      }
+      await sleep(backoffDelay(attempt));
+      continue;
+    }
+
+    if (res.ok) return await res.text();
+
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt >= maxAttempts) {
+      throw new FlexError("HTTP_ERROR", `${label} failed: ${res.status}`, retryable);
+    }
+    await sleep(backoffDelay(attempt, parseRetryAfterMs(res.headers.get("Retry-After"))));
   }
-  if (!r.ReferenceCode) throw new FlexError("NO_REFERENCE", "Missing ReferenceCode");
-  return String(r.ReferenceCode);
+  throw new FlexError("HTTP_ERROR", `${label} failed: exhausted`, true);
+}
+
+async function sendRequest(token: string, queryId: string): Promise<string> {
+  const url = `${FLEX_BASE}/SendRequest?t=${encodeURIComponent(token)}&q=${encodeURIComponent(queryId)}&v=${FLEX_VERSION}`;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const xml = await fetchText(url, "Send request", MAX_ATTEMPTS - attempt);
+    const parsed = parser.parse(xml) as FlexQueryResponse;
+    const r = parsed.FlexStatementResponse;
+    if (!r) throw new FlexError("PARSE_ERROR", "Missing FlexStatementResponse");
+
+    if (r.Status !== "Success") {
+      const err = new FlexError(
+        r.ErrorCode ?? "FLEX_ERROR",
+        r.ErrorMessage ?? "Flex SendRequest failed"
+      );
+      // Solo los códigos transitorios se reintentan; el resto falla ya.
+      if (!err.retryable || attempt === MAX_ATTEMPTS - 1) throw err;
+      await sleep(backoffDelay(attempt + 1));
+      continue;
+    }
+    if (!r.ReferenceCode) throw new FlexError("NO_REFERENCE", "Missing ReferenceCode");
+    return String(r.ReferenceCode);
+  }
+  throw new FlexError("FLEX_ERROR", "Flex SendRequest failed");
 }
 
 async function getStatement(token: string, referenceCode: string): Promise<string> {
-  const url = `${FLEX_BASE}/FlexStatementService.GetStatement?q=${encodeURIComponent(referenceCode)}&t=${encodeURIComponent(token)}&v=${FLEX_VERSION}`;
+  const url = `${FLEX_BASE}/GetStatement?q=${encodeURIComponent(referenceCode)}&t=${encodeURIComponent(token)}&v=${FLEX_VERSION}`;
 
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const res = await fetch(url, { method: "GET", cache: "no-store" });
-    if (!res.ok) throw new FlexError("HTTP_ERROR", `Get statement failed: ${res.status}`);
-    const xml = await res.text();
+  for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
+    const isLast = attempt === MAX_POLL_ATTEMPTS - 1;
+    const xml = await fetchText(url, "Get statement", MAX_POLL_ATTEMPTS - attempt);
 
     if (xml.includes("FlexQueryResponse")) return xml;
 
     const parsed = parser.parse(xml) as FlexQueryResponse;
     const r = parsed.FlexStatementResponse;
+    // 1019 = el statement aún no está listo: se sigue sondeando.
     if (r?.Status === "Warn" && r.ErrorCode === "1019") {
-      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      if (!isLast) await sleep(POLL_INTERVAL_MS);
       continue;
     }
-    if (r?.ErrorCode) throw new FlexError(r.ErrorCode, r.ErrorMessage ?? "Flex error");
+    if (r?.ErrorCode) {
+      const err = new FlexError(r.ErrorCode, r.ErrorMessage ?? "Flex error");
+      if (!err.retryable) throw err;
+      if (!isLast) await sleep(backoffDelay(attempt + 1));
+      continue;
+    }
 
     throw new FlexError("UNKNOWN_RESPONSE", "Unexpected Flex response");
   }
-  throw new FlexError("TIMEOUT", "Flex statement not ready after retries");
+  throw new FlexError("TIMEOUT", "Flex statement not ready after retries", true);
 }
 
 function parsePositions(xml: string): FlexPosition[] {
