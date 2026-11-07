@@ -16,7 +16,7 @@ type Cdt = CdtInitial & {
   name: string;
 };
 
-// Días hasta el vencimiento (null si no hay fecha).
+// Days until maturity (null if there is no date).
 function daysToMaturity(maturity?: string | null): number | null {
   if (!maturity) return null;
   const end = new Date(maturity + "T00:00:00").getTime();
@@ -25,7 +25,7 @@ function daysToMaturity(maturity?: string | null): number | null {
   return Math.round((end - today.getTime()) / 86400000);
 }
 
-// Compara la tasa del CDT (decimal) contra la banda de mercado del mismo plazo.
+// Compares the CDT rate (decimal) against the market band for the same term.
 function marketComparison(cdt: Cdt, ratesByTerm?: RatesByTerm) {
   if (!ratesByTerm || cdt.interest_rate == null) return null;
   const term = nearestTerm(cdt.term_months);

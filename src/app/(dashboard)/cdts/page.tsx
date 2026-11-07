@@ -24,8 +24,8 @@ export default async function CdtsPage() {
     fetchCdtRatesByTerm(),
   ]);
 
-  // Tendencia histórica de tasa por banco+plazo, solo para los bancos que el
-  // usuario realmente tiene (una petición por par único, cacheada 1h).
+  // Historical rate trend per bank+term, only for the banks the user
+  // actually holds (one request per unique pair, cached for 1h).
   const uniquePairs = new Map<string, { bank: string; termDesc: string }>();
   for (const c of cdts ?? []) {
     if (!c.institution) continue;

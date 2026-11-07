@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { SignOutButton } from "./sign-out-button";
 import { FeedbackButton } from "@/components/feedback/feedback-button";
 
-// market-agent (app hermana de análisis/decisión). URL por env, con fallback.
+// market-agent (sister app for analysis/decisions). URL from env, with fallback.
 const MARKET_AGENT_URL =
   process.env.NEXT_PUBLIC_MARKET_AGENT_URL ??
   "https://market-agent-orcin.vercel.app/opportunities";
@@ -53,7 +53,7 @@ export function Sidebar({ userEmail, budgetUrl }: { userEmail?: string; budgetUr
         <span className="font-semibold tracking-tight">Investments</span>
       </Link>
 
-      {/* Switcher entre las apps hermanas (Presupuesto solo para el dueño) */}
+      {/* Switcher between the sister apps (Budget shown only to the owner) */}
       <div className="mb-6 flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-0.5 text-xs">
         <span className="flex-1 rounded-md bg-[var(--surface)] px-2 py-1.5 text-center font-medium">
           Rastreo

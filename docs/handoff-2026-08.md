@@ -1,113 +1,114 @@
-# Reporte de sesión & handoff — Agosto 2026
+# Session report & handoff — August 2026
 
-Ecosistema de inversión: **investment-dashboard** (Rastreo: qué tengo, cómo va) +
-**market-agent** (Análisis: qué es bueno, cuándo comprar), dos repos separados
-integrados por Supabase compartido y un design system común (**invest-ui**).
+Investment ecosystem: **investment-dashboard** (Tracking: what I own, how it is
+doing) + **market-agent** (Analysis: what is good, when to buy). Two separate
+repos integrated through a shared Supabase project and a common design system
+(**invest-ui**).
 
 ---
 
-## 1. Qué se hizo
+## 1. What was done
 
-### Rework UI/UX (Fases 1–4) — completo, en prod
-- **invest-ui** (`MattBuiles/invest-ui`, público, consumido como git-dependency
-  sin build): tokens claro+oscuro, primitivos (Button, Card, Badge, Field, Tabs,
-  Table, Skeleton, EmptyState, ThemeToggle), charts (ScoreGauge, Snowflake) y
-  ThemeProvider.
-- **market-agent**: PriceChart (velas + EMAs + zonas S/R), Snowflake 5 ejes, DCF /
-  valor intrínseco, `ma_signals` enriquecido (ejes + fair value), modo claro.
-- **dashboard**: adopta invest-ui (jade, claro/oscuro), Portfolio Snowflake en el
-  overview, nav móvil con drawer, skeletons, badges de vencimiento de CDT, URLs
-  cross-app apuntando a prod (no localhost).
+### UI/UX rework (Phases 1–4) — complete, in production
+- **invest-ui** (`MattBuiles/invest-ui`, public, consumed as a git dependency
+  without a build step): light + dark tokens, primitives (Button, Card, Badge,
+  Field, Tabs, Table, Skeleton, EmptyState, ThemeToggle), charts (ScoreGauge,
+  Snowflake) and ThemeProvider.
+- **market-agent**: PriceChart (candles + EMAs + S/R zones), 5-axis Snowflake,
+  DCF / intrinsic value, enriched `ma_signals` (axes + fair value), light mode.
+- **dashboard**: adopts invest-ui (jade, light/dark), Portfolio Snowflake on the
+  overview, mobile nav drawer, skeletons, CDT maturity badges, cross-app URLs
+  pointing to production (not localhost).
 
-### Esta sesión
-| PR | Repo | Entrega |
-|----|------|---------|
-| #9 (previo) | dashboard | Sync IBKR programado (cron diario + Vault desde service_role) |
-| **#11** | dashboard | **Fix**: el proxy de sesión redirigía `/api/cron` a login → el cron era un no-op. Exento. |
-| **#10** | dashboard | CDTs enriquecidos: buckets 90/180/360, prefill de tasa por banco, comparación tu-CDT-vs-mercado, Tabs por plazo |
+### This session
+| PR | Repo | Delivery |
+|----|------|----------|
+| #9 (previous) | dashboard | Scheduled IBKR sync (daily cron + Vault from service_role) |
+| **#11** | dashboard | **Fix**: the session proxy redirected `/api/cron` to login → the cron was a no-op. Exempted. |
+| **#10** | dashboard | Enriched CDTs: 90/180/360 buckets, rate prefill by bank, your-CDT-vs-market comparison, Tabs by term |
 | **#1** | invest-ui | Modal + ConfirmProvider/useConfirm |
-| **#12** | dashboard | ConfirmDialog reemplaza los 6 `window.confirm()` |
-| **#13** | dashboard | IBKR multi-conexión |
-| **#14** | dashboard | IBKR historial de transacciones (parseo de sección Trades → tabla `transactions`) |
+| **#12** | dashboard | ConfirmDialog replaces the 6 `window.confirm()` calls |
+| **#13** | dashboard | IBKR multi-connection |
+| **#14** | dashboard | IBKR transaction history (Trades section parsing → `transactions` table) |
 | **#2** | invest-ui | Toast/ToastProvider/useToast + Sparkline |
-| **#15** | dashboard | Toasts de éxito (guardar/borrar/sync) + tendencia histórica de tasa CDT (Sparkline) |
+| **#15** | dashboard | Success toasts (save/delete/sync) + historical CDT rate trend (Sparkline) |
 
-### Arquitectura / seguridad relevante
-- **Cerebro único**: market-agent computa score/snowflake/fair value → `ma_signals`;
-  el dashboard solo los muestra. Tablas compartidas prefijadas `ma_*`.
-- **Sync IBKR programado**: cron Vercel (22:00 UTC) → `/api/cron/sync-ibkr`
-  (fail-closed por `CRON_SECRET`) → cliente service-role → RPC
-  `get_broker_secret_service` (SECURITY DEFINER, ejecutable **solo** por
-  service_role, auditada) descifra el token Flex de Vault → upsert de holdings +
-  transactions por conexión. Verificado en prod: sin auth → 401.
-- invest-ui se fija por **commit** en `pnpm-lock`; tras mergear en invest-ui hay que
-  correr `pnpm update invest-ui` en el consumidor para bumpear.
-- **Nov 2026 — fix sync IBKR**: el cliente Flex usaba el host legado del servlet
-  v2 con `v=3` y fallaba siempre con `1001`. Ahora usa el endpoint v3
-  (`ndcdyn.../FlexWebService`) y reintenta códigos transitorios. Detalle en
+### Relevant architecture / security
+- **Single brain**: market-agent computes score/snowflake/fair value → `ma_signals`;
+  the dashboard only displays them. Shared tables are prefixed `ma_*`.
+- **Scheduled IBKR sync**: Vercel cron (22:00 UTC) → `/api/cron/sync-ibkr`
+  (fail-closed via `CRON_SECRET`) → service-role client → RPC
+  `get_broker_secret_service` (SECURITY DEFINER, executable **only** by
+  service_role, audited) decrypts the Flex token from Vault → upsert holdings +
+  transactions per connection. Verified in production: no auth → 401.
+- invest-ui is pinned by **commit** in `pnpm-lock`; after merging in invest-ui,
+  run `pnpm update invest-ui` in the consumer to bump it.
+- **Nov 2026 — IBKR sync fix**: the Flex client used the legacy v2 servlet host
+  with `v=3` and always failed with `1001`. It now uses the v3 endpoint
+  (`ndcdyn.../FlexWebService`) and retries transient codes. Details in
   [`docs/ibkr-flex-sync.md`](./ibkr-flex-sync.md).
 
-### Pendientes de acción del usuario (no código)
-- IBKR: añadir sección **Trades** al Flex Query (hoy solo Open Positions) y correr
-  un sync → puebla `transactions`.
-- Confirmar el sync programado end-to-end con el `CRON_SECRET` real (o esperar la
-  corrida de las 22:00 UTC). Nota: `CRON_SECRET` debe ser ASCII puro (va en header).
+### User action items (not code)
+- IBKR: add the **Trades** section to the Flex Query (currently Open Positions
+  only) and run a sync → populates `transactions`.
+- Confirm the scheduled sync end-to-end with the real `CRON_SECRET` (or wait for
+  the 22:00 UTC run). Note: `CRON_SECRET` must be plain ASCII (it goes in a header).
 
 ---
 
-## 2. Backlog para compañeros (tareas independientes)
+## 2. Backlog for teammates (independent tasks)
 
-Cada tarea es tomable por separado. Área · tamaño · skill sugerido.
+Each task can be picked up separately. Area · size · suggested skill.
 
-### A. Score unificado con subscores — **market-agent** · L · analítico/ML
-Estilo Danelfin: subscores Fundamental / Técnico / Sentimiento / Riesgo uniendo
-señales que ya existen, más un score compuesto. **Regla dura**: backtestear antes
-de confiar (infra en `src/backtest`); no shippear si empeora vs la rúbrica actual.
-Empezar por brainstorming de diseño + definición de la métrica de éxito del
-backtest. *Este es el flagship y necesita decisiones de producto.*
+### A. Unified score with subscores — **market-agent** · L · analytical/ML
+Danelfin-style: Fundamental / Technical / Sentiment / Risk subscores joining
+signals that already exist, plus a composite score. **Hard rule**: backtest
+before trusting it (infrastructure in `src/backtest`); do not ship if it is worse
+than the current rubric. Start with design brainstorming + defining the
+backtest success metric. *This is the flagship and needs product decisions.*
 
-### B. Risks & Rewards automáticos — **market-agent** · M · reglas/LLM
-Generar viñetas de riesgos y oportunidades por activo (reglas sobre fundamentales +
-opcional LLM). Va en `/asset/[ticker]`.
+### B. Automatic Risks & Rewards — **market-agent** · M · rules/LLM
+Generate risk and opportunity bullets per asset (rules over fundamentals +
+optional LLM). Goes in `/asset/[ticker]`.
 
-### C. Filtros en Oportunidades — **market-agent** · S/M · frontend
-Filtrar `/opportunities` por sector / factor / score. Datos ya disponibles.
+### C. Filters in Opportunities — **market-agent** · S/M · frontend
+Filter `/opportunities` by sector / factor / score. Data is already available.
 
-### D. Skeletons + hamburguesa móvil — **market-agent** · S · frontend
-Traer al market-agent el mismo nivel de UX del dashboard (loading.tsx, header con
-drawer móvil). invest-ui ya tiene los primitivos.
+### D. Skeletons + mobile hamburger — **market-agent** · S · frontend
+Bring the dashboard's UX level to market-agent (loading.tsx, header with mobile
+drawer). invest-ui already has the primitives.
 
-### E. Toasts en market-agent — **market-agent** · S · frontend
-Consumir `ToastProvider`/`useToast` de invest-ui (ya existe) para feedback de
-acciones. Espejo de lo hecho en el dashboard.
+### E. Toasts in market-agent — **market-agent** · S · frontend
+Consume `ToastProvider`/`useToast` from invest-ui (already exists) for action
+feedback. Mirror of what was done in the dashboard.
 
-### F. Analytics de cartera — **dashboard** · M · frontend/datos
-`src/lib/portfolio-analytics.ts`: diversificación por sector/geografía, proyección
-de ingresos por dividendos, P&L (no realizado/realizado/dividendos/FX).
+### F. Portfolio analytics — **dashboard** · M · frontend/data
+`src/lib/portfolio-analytics.ts`: sector/geography diversification, dividend
+income projection, P&L (unrealized/realized/dividends/FX).
 
-### G. CDTs: tendencia por banco (v2) — **dashboard** · S · frontend
-La v1 (Sparkline de tendencia de mercado por plazo) ya está. Extensión: overlay de
-la tasa del propio CDT vs la serie, o tabla comparativa histórica por banco.
+### G. CDTs: per-bank trend (v2) — **dashboard** · S · frontend
+v1 (Sparkline of market trend by term) already exists. Extension: overlay the
+user's own CDT rate vs the series, or a historical comparison table by bank.
 
-### H. Brokers Fase 2: agregador OAuth — **dashboard** · L · backend/integraciones
-SnapTrade / Plaid / Alpaca para brokers más allá de IBKR. Requiere flujo OAuth +
-almacenamiento seguro de tokens (patrón Vault ya establecido).
+### H. Brokers Phase 2: OAuth aggregator — **dashboard** · L · backend/integrations
+SnapTrade / Plaid / Alpaca for brokers beyond IBKR. Requires an OAuth flow +
+secure token storage (the Vault pattern is already established).
 
-### I. Dominio único / SSO — **infra** · M · plataforma
-Hoy son 2 dominios = 2 logins (cookie por dominio). Opción: `app.x.com/rastreo` y
-`/analisis` bajo un dominio para SSO fluido.
+### I. Single domain / SSO — **infra** · M · platform
+Today there are 2 domains = 2 logins (cookie per domain). Option: `app.x.com/rastreo`
+and `/analisis` under one domain for seamless SSO.
 
-### J. Tests — **ambos** · M · calidad
-Los repos no tienen runner de tests. Montar vitest + tests de lógica pura ya escrita
-(`dcf.ts`, `snowflake.ts`, `cdt-rates.ts`, `ibkr-flex` parseTrades/parsePositions).
+### J. Tests — **both** · M · quality
+The repos do not have a test runner. Set up vitest + tests for pure logic already
+written (`dcf.ts`, `snowflake.ts`, `cdt-rates.ts`, `ibkr-flex` parseTrades/parsePositions).
 
 ---
 
-## 3. Cómo trabajar en paralelo sin pisarse
-- **invest-ui primero** cuando una tarea necesita un primitivo nuevo: mergear ahí,
-  luego `pnpm update invest-ui` en el consumidor. Evita que dos PRs toquen el mismo
-  primitivo.
-- Tareas por **área** (market-agent vs dashboard vs invest-ui) no comparten estado →
-  seguras en paralelo. Dentro de un repo, evitar dos PRs que toquen el mismo archivo
-  (ej. `page.tsx` de una sección).
-- Un PR por feature, commit por fase, preview verde antes de mergear.
+## 3. How to work in parallel without stepping on each other
+- **invest-ui first** when a task needs a new primitive: merge there, then run
+  `pnpm update invest-ui` in the consumer. Avoids two PRs touching the same
+  primitive.
+- Tasks by **area** (market-agent vs dashboard vs invest-ui) do not share state →
+  safe in parallel. Within one repo, avoid two PRs touching the same file
+  (e.g. a section's `page.tsx`).
+- One PR per feature, one commit per phase, green preview before merging.

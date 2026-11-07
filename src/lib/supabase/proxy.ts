@@ -36,9 +36,9 @@ export async function updateSession(request: NextRequest) {
   // CRON_SECRET. Redirecting them to /login would make the scheduled sync a
   // no-op, so they bypass the session gate here.
   const isCron = pathname.startsWith("/api/cron");
-  // La API de feedback hace su propio chequeo de sesión y responde 401 JSON.
-  // Redirigir a /login devolvería HTML y fetch() seguiría el redirect con
-  // res.ok === true — un falso "feedback enviado" en la UI.
+  // The feedback API runs its own session check and answers with 401 JSON.
+  // Redirecting to /login would return HTML and fetch() would follow the
+  // redirect with res.ok === true — a false "feedback sent" in the UI.
   const isFeedbackApi = pathname.startsWith("/api/feedback");
   const isPublic =
     pathname === "/" || isAuthRoute || isAuthCallback || isCron || isFeedbackApi;

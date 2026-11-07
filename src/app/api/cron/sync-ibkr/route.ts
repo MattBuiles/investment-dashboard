@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
   const synced = results.filter((r) => r.ok).length;
 
-  // Después del sync de IBKR, para tener precios frescos. Un fallo de Notion no tumba el cron.
+  // Runs after the IBKR sync so prices stay fresh. A Notion failure does not take the cron down.
   let notion: string;
   try {
     notion = await syncOwnerPatrimonio(admin);

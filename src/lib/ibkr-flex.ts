@@ -3,7 +3,7 @@ import { XMLParser } from "fast-xml-parser";
 const FLEX_BASE = "https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService";
 const FLEX_VERSION = "3";
 
-// Códigos transitorios de IBKR que vale la pena reintentar.
+// Transient IBKR codes that are worth retrying.
 export const TRANSIENT_FLEX_CODES = new Set([
   "1001",
   "1004",
@@ -41,7 +41,7 @@ export type FlexTrade = {
   side: "buy" | "sell";
   quantity: number;
   price: number;
-  amount: number; // netCash (signed): negativo compra, positivo venta
+  amount: number; // netCash (signed): negative for buys, positive for sells
   currency: string;
   occurred_at: string; // ISO
 };
@@ -127,8 +127,8 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Backoff exponencial (1s, 2s, 4s...) con jitter pequeño; si IBKR envía
-// Retry-After se respeta, con tope de 5s.
+// Exponential backoff (1s, 2s, 4s...) with small jitter; a Retry-After
+// header from IBKR is honored, capped at 5s.
 function backoffDelay(attempt: number, retryAfterMs?: number | null): number {
   if (retryAfterMs != null) return Math.min(retryAfterMs, MAX_RETRY_AFTER_MS);
   const exponential = BASE_BACKOFF_MS * 2 ** (attempt - 1);
@@ -145,8 +145,8 @@ function parseRetryAfterMs(header: string | null): number | null {
   return delta > 0 ? delta : 0;
 }
 
-// GET con reintentos: errores de red, HTTP 429 y 5xx se reintentan (hasta
-// `maxAttempts` en total); el resto de 4xx falla de inmediato.
+// GET with retries: network errors, HTTP 429 and 5xx are retried (up to
+// `maxAttempts` in total); the rest of the 4xx fail right away.
 async function fetchText(url: string, label: string, maxAttempts = MAX_ATTEMPTS): Promise<string> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let res: Response;
@@ -185,7 +185,7 @@ async function sendRequest(token: string, queryId: string): Promise<string> {
         r.ErrorCode ?? "FLEX_ERROR",
         r.ErrorMessage ?? "Flex SendRequest failed"
       );
-      // Solo los códigos transitorios se reintentan; el resto falla ya.
+      // Only transient codes are retried; everything else fails right away.
       if (!err.retryable || attempt === MAX_ATTEMPTS - 1) throw err;
       await sleep(backoffDelay(attempt + 1));
       continue;
@@ -207,7 +207,7 @@ async function getStatement(token: string, referenceCode: string): Promise<strin
 
     const parsed = parser.parse(xml) as FlexQueryResponse;
     const r = parsed.FlexStatementResponse;
-    // 1019 = el statement aún no está listo: se sigue sondeando.
+    // 1019 = the statement is not ready yet: keep polling.
     if (r?.Status === "Warn" && r.ErrorCode === "1019") {
       if (!isLast) await sleep(POLL_INTERVAL_MS);
       continue;
@@ -254,7 +254,7 @@ function parsePositions(xml: string): FlexPosition[] {
   return positions;
 }
 
-// Convierte "20240115" o "20240115;103000" en ISO. Devuelve null si no parsea.
+// Turns "20240115" or "20240115;103000" into ISO. Returns null if it does not parse.
 function parseTradeDate(tradeDate?: string | number, dateTime?: string): string | null {
   const raw = String(tradeDate ?? dateTime ?? "").trim();
   const m = raw.match(/^(\d{4})(\d{2})(\d{2})/);
@@ -299,8 +299,8 @@ function parseTrades(xml: string): FlexTrade[] {
   return trades;
 }
 
-// Un solo SendRequest/GetStatement devuelve posiciones + trades (si el Flex
-// query incluye la sección Trades; si no, trades queda vacío — no falla).
+// A single SendRequest/GetStatement returns positions + trades (when the Flex
+// query includes the Trades section; otherwise trades stays empty — no failure).
 export async function fetchFlexStatement(
   token: string,
   queryId: string

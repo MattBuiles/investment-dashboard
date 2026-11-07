@@ -28,8 +28,8 @@ function httpError(status: number, headers?: Record<string, string>): () => Resp
   return () => new Response("boom", { status, headers });
 }
 
-// Cola por endpoint: cada llamada consume el siguiente handler. Una llamada
-// extra responde 404 (no reintentable) para que el test falle rápido.
+// Queue per endpoint: each call consumes the next handler. An extra call
+// answers 404 (not retryable) so the test fails fast.
 function stubFlexFetch(
   sendHandlers: Array<() => Response>,
   getHandlers: Array<() => Response>
@@ -56,7 +56,7 @@ function countCalls(mockFetch: ReturnType<typeof stubFlexFetch>, prefix: string)
   return mockFetch.mock.calls.filter((call) => String(call[0]).startsWith(prefix)).length;
 }
 
-// Avanza los timers fake hasta que la promesa se resuelve (sin esperas reales).
+// Advances the fake timers until the promise settles (no real waiting).
 async function settle<T>(promise: Promise<T>, maxTicks = 120): Promise<T> {
   let done = false;
   const track = promise.then(
@@ -203,7 +203,7 @@ describe("ibkr-flex", () => {
 
     const data = await settle(fetchFlexStatement("token", "1234"));
 
-    // Sin el tope de 5000 ms el sleep sería de 999 s y nunca terminaría.
+    // Without the 5000 ms cap the sleep would be 999 s and never finish.
     expect(data.positions).toHaveLength(1);
     expect(countCalls(mockFetch, GET_URL)).toBe(2);
   });

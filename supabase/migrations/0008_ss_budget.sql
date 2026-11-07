@@ -1,21 +1,22 @@
--- Integración con splitstream (app de presupuesto del dueño).
+-- Integration with splitstream (the owner's budget app).
 --
--- splitstream escribe aquí, con la service role y desde su servidor, el resumen
--- de la quincena actual del usuario cuyo email coincide. El dashboard solo lee.
+-- splitstream writes here, with the service role from its own server, the
+-- current biweekly (quincena) summary of the user whose email matches.
+-- The dashboard only reads.
 --
--- Seguridad:
---   1) RLS activado: cada usuario solo puede LEER su propia fila.
---   2) No hay políticas de INSERT/UPDATE/DELETE: solo la service role escribe.
+-- Security:
+--   1) RLS enabled: each user can only READ their own row.
+--   2) No INSERT/UPDATE/DELETE policies: only the service role writes.
 
 create table if not exists public.ss_budget (
   user_id uuid primary key references auth.users (id) on delete cascade,
   paycheck_date date,
   paycheck_amount numeric,
-  -- Disponible por bolsillo en COP: {"obligaciones": 352000, "inversion": ...}
+  -- Available per budget bucket in COP: {"obligaciones": 352000, "inversion": ...}
   available jsonb not null default '{}'::jsonb,
-  -- Parte ETF de Inversión acumulada en el trimestre y aún no enviada a IBKR.
+  -- ETF part of Inversión accumulated during the quarter, not yet sent to IBKR.
   etf_pending numeric not null default 0,
-  -- Parte renta fija acumulada en el trimestre y aún no puesta en CDT/natillera.
+  -- Fixed-income part accumulated during the quarter, not yet placed in a CDT/natillera.
   fixed_income_pending numeric not null default 0,
   updated_at timestamptz not null default now()
 );

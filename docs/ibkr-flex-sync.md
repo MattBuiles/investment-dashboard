@@ -1,46 +1,46 @@
-# Sync IBKR Flex: endpoint v3 y política de reintentos
+# IBKR Flex sync: v3 endpoint and retry policy
 
-Actualizado: 7 de noviembre de 2026.
+Updated: November 7, 2026.
 
-## Síntoma
+## Symptom
 
-El botón **Sincronizar** de la tarjeta de conexión IBKR (y el cron diario)
-fallaba con:
+The **Sincronizar** (Sync) button on the IBKR connection card (and the daily
+cron) failed with:
 
 ```
 1001: Statement could not be generated at this time. Please try again shortly.
 ```
 
-El mismo Flex Query funcionaba desde el portal de IBKR, y el token y la query
-eran válidos.
+The same Flex Query worked from the IBKR portal, and the token and query were
+valid.
 
-## Causa raíz
+## Root cause
 
-`src/lib/ibkr-flex.ts` llamaba al host/path legado del servlet v2:
+`src/lib/ibkr-flex.ts` called the legacy v2 servlet host/path:
 
 ```
 https://gdcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.SendRequest
 https://gdcdyn.interactivebrokers.com/Universal/servlet/FlexStatementService.GetStatement
 ```
 
-aunque enviaba `v=3`. IBKR rechaza esa combinación de forma determinista para
-esta cuenta/query con el código `1001`, que simula ser un error transitorio pero
-no lo es.
+even though it sent `v=3`. IBKR rejects that combination deterministically for
+this account/query with code `1001`, which looks like a transient error but is
+not.
 
-Comparación controlada, mismo token, misma query, mismo periodo
-(`LastBusinessDay`) y mismo minuto:
+Controlled comparison with the same token, same query, same period
+(`LastBusinessDay`) and same minute:
 
-| Endpoint | Resultado |
+| Endpoint | Result |
 |---|---|
 | `ndcdyn.../FlexWebService/SendRequest` | `Success`, ReferenceCode `8523813486` |
-| `gdcdyn.../Universal/servlet/...` (el que usaba la app) | `Fail`, `1001` |
+| `gdcdyn.../Universal/servlet/...` (the one the app used) | `Fail`, `1001` |
 
-El único cambio fue el endpoint. No era la query, ni el token, ni el periodo, ni
-el fin de semana.
+The only variable was the endpoint. It was not the query, the token, the period
+or the weekend.
 
-## Solución aplicada
+## Applied fix
 
-Endpoint v3 documentado:
+Documented v3 endpoint:
 
 ```
 https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService
@@ -49,34 +49,32 @@ https://ndcdyn.interactivebrokers.com/AccountManagement/FlexWebService
 - `GET /SendRequest?t=<token>&q=<queryId>&v=3`
 - `GET /GetStatement?q=<referenceCode>&t=<token>&v=3`
 
-El campo `<Url>` que devuelve `SendRequest` **no se usa**: en las pruebas
-apuntaba al host legado (`gdcdyn`). Las URLs se construyen siempre desde
-`FLEX_BASE`.
+The `<Url>` field returned by `SendRequest` is **not used**: in testing it
+pointed to the legacy host (`gdcdyn`). URLs are always built from `FLEX_BASE`.
 
-## Reintentos
+## Retries
 
-Antes no había reintentos en `SendRequest`; solo se sondeaba `GetStatement` para
-el código `1019`.
+Previously there were no retries in `SendRequest`; `GetStatement` was only
+polled for code `1019`.
 
-Ahora:
+Now:
 
-- `FlexError` expone `retryable: boolean`. Por defecto se deriva de
+- `FlexError` exposes `retryable: boolean`. By default it is derived from
   `TRANSIENT_FLEX_CODES`:
   `1001`, `1004`–`1009`, `1018`, `1019`, `1021`.
-- `SendRequest` reintenta hasta 4 veces (1 s, 2 s, 4 s + jitter) cuando IBKR
-  devuelve `Fail` con un código transitorio. Los códigos no transitorios fallan
-  de inmediato.
-- Errores de red, HTTP `429` y HTTP `5xx` se reintentan con backoff
-  exponencial. Se respeta `Retry-After`, con tope de 5 s.
-- El resto de HTTP `4xx` falla de inmediato.
-- `GetStatement` sondea hasta 8 veces cada 1.5 s mientras el código sea `1019`
-  (statement aún no listo) y aplica el mismo backoff a códigos transitorios.
-- Si se agotan los intentos, se lanza `FlexError("TIMEOUT", ..., true)`.
+- `SendRequest` retries up to 4 times (1 s, 2 s, 4 s + jitter) when IBKR returns
+  `Fail` with a transient code. Non-transient codes fail immediately.
+- Network errors, HTTP `429` and HTTP `5xx` are retried with exponential
+  backoff. `Retry-After` is honored, capped at 5 s.
+- Other HTTP `4xx` responses fail immediately.
+- `GetStatement` polls up to 8 times every 1.5 s while the code is `1019`
+  (statement not ready yet) and applies the same backoff to transient codes.
+- If attempts are exhausted, it throws `FlexError("TIMEOUT", ..., true)`.
 
-Los reintentos no habrían resuelto el bug original: el endpoint legado fallaba
-siempre. Sirven para los `1001` realmente transitorios del endpoint v3.
+Retries would not have fixed the original bug: the legacy endpoint failed every
+time. They handle genuinely transient `1001` responses from the v3 endpoint.
 
-## Verificación manual
+## Manual verification
 
 `SendRequest`:
 
@@ -88,7 +86,7 @@ curl -sS --max-time 30 -G \
 echo; unset T
 ```
 
-`GetStatement` con el ReferenceCode devuelto:
+`GetStatement` with the returned ReferenceCode:
 
 ```bash
 read -rsp 'Flex token: ' T; echo
@@ -99,29 +97,29 @@ curl -sS --max-time 30 -G \
 echo; unset T
 ```
 
-Un `SendRequest` correcto responde `Status=Success` + `ReferenceCode`.
-`GetStatement` responde `FlexQueryResponse` cuando el statement está listo.
+A successful `SendRequest` responds with `Status=Success` + `ReferenceCode`.
+`GetStatement` responds with `FlexQueryResponse` once the statement is ready.
 
 ## Tests
 
-`src/lib/ibkr-flex.test.ts` cubre:
+`src/lib/ibkr-flex.test.ts` covers:
 
-- URLs del endpoint v3 (`v=3`) y que se ignora el `<Url>` legado.
-- Parseo de posiciones y trades.
-- Reintento de `1001` en `SendRequest` hasta 4 intentos.
-- Fallo inmediato en códigos no transitorios (`1012`).
-- Sondeo de `1019` y reintento de HTTP `5xx` en `GetStatement`.
-- Tope de `Retry-After` y no reintento de otros `4xx`.
-- `FlexError.retryable` en el error final.
+- v3 endpoint URLs (`v=3`) and ignoring the legacy `<Url>`.
+- Position and trade parsing.
+- Retrying `1001` in `SendRequest` up to 4 attempts.
+- Immediate failure on non-transient codes (`1012`).
+- Polling `1019` and retrying HTTP `5xx` in `GetStatement`.
+- Capping `Retry-After` and not retrying other `4xx`.
+- `FlexError.retryable` on the final error.
 
-## Notas operativas
+## Operational notes
 
-- Los errores se siguen guardando en `broker_connections.last_sync_error` con el
-  formato `<code>: <message>`. Con el endpoint v3 y los reintentos, el mensaje
-  `1001` ya no debería aparecer; si reaparece de forma sostenida, revisar el
-  estado de generación del query en el portal antes de tocar el código.
-- El cron (`/api/cron/sync-ibkr`, 22:00 UTC) usa el mismo
-  `fetchFlexStatement`, por lo que hereda endpoint y reintentos sin cambios
-  adicionales.
-- Si IBKR vuelve a cambiar de host, actualizar solo `FLEX_BASE` en
+- Errors are still stored in `broker_connections.last_sync_error` in
+  `<code>: <message>` format. With the v3 endpoint and retries, the `1001`
+  message should no longer appear; if it does so persistently, check the query's
+  generation status in the portal before changing code.
+- The cron (`/api/cron/sync-ibkr`, 22:00 UTC) uses the same
+  `fetchFlexStatement`, so it inherits the endpoint and retries with no
+  additional changes.
+- If IBKR changes hosts again, update only `FLEX_BASE` in
   `src/lib/ibkr-flex.ts`.

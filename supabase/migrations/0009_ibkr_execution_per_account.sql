@@ -1,7 +1,7 @@
--- El ID de ejecución de IBKR era único en toda la tabla: si dos usuarios conectan
--- la misma cuenta de IBKR (p. ej. el dueño cambia de correo), el segundo choca con
--- "transactions_ibkr_execution_id_key". El dedup del sync ya es por cuenta
--- (syncTradesToTransactions), así que la restricción debe serlo también.
+-- The IBKR execution ID was unique across the whole table: if two users connect
+-- the same IBKR account (e.g. the owner changes email), the second one hits
+-- "transactions_ibkr_execution_id_key". Sync dedup is already per account
+-- (syncTradesToTransactions), so the constraint has to be as well.
 
 alter table public.transactions
   drop constraint if exists transactions_ibkr_execution_id_key;

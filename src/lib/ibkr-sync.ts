@@ -63,9 +63,9 @@ export function transactionRowsFromTrades(
 }
 
 /**
- * Inserta solo los trades nuevos como transactions (dedup por ibkr_execution_id
- * ya presente en la cuenta). No borra transacciones existentes. Devuelve cuántas
- * insertó. Idempotente entre syncs. Funciona con cliente admin o de sesión.
+ * Inserts only the new trades as transactions (dedup by ibkr_execution_id
+ * already present on the account). Never deletes existing transactions. Returns
+ * how many it inserted. Idempotent across syncs. Works with an admin or session client.
  */
 export async function syncTradesToTransactions(
   client: Admin,

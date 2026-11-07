@@ -26,14 +26,14 @@ function buildUrl(termDescription: string): string {
 
 export type CdtTerm = { months: number; desc: string; label: string };
 
-// Plazos que expone la Superfinanciera en el dataset.
+// Term buckets published by Superfinanciera in the dataset.
 export const CDT_TERMS: CdtTerm[] = [
   { months: 3, desc: "A 90 DIAS", label: "90 días" },
   { months: 6, desc: "A 180 DIAS", label: "180 días" },
   { months: 12, desc: "A 360 DIAS", label: "360 días" },
 ];
 
-// Bucket de mercado más cercano al plazo real del CDT (en meses).
+// Market bucket closest to the CDT's real term (in months).
 export function nearestTerm(months: number | null | undefined): CdtTerm {
   if (!months) return CDT_TERMS[CDT_TERMS.length - 1];
   return CDT_TERMS.reduce((best, t) =>
@@ -51,7 +51,7 @@ export function marketStats(rates: CdtMarketRate[]): MarketStats | null {
   return { top, avg, count: vals.length };
 }
 
-// Tasa de mercado para un banco concreto (match laxo por nombre).
+// Market rate for a specific bank (loose match by name).
 export function rateForBank(
   rates: CdtMarketRate[],
   bank: string
@@ -67,7 +67,7 @@ export function rateForBank(
 
 export type RatesByTerm = Record<string, CdtMarketRate[]>;
 
-// Todas las bandas de plazo en paralelo, keyed por `desc`.
+// All term bands fetched in parallel, keyed by `desc`.
 export async function fetchCdtRatesByTerm(limit: number = 10): Promise<RatesByTerm> {
   const entries = await Promise.all(
     CDT_TERMS.map(
@@ -77,7 +77,7 @@ export async function fetchCdtRatesByTerm(limit: number = 10): Promise<RatesByTe
   return Object.fromEntries(entries);
 }
 
-// Serie histórica de tasa (una por corte, cronológica) para un banco + plazo.
+// Historical rate series (one per cutoff date, chronological) for a bank + term.
 export async function fetchCdtRateHistory(
   bank: string,
   termDescription: string,
@@ -99,7 +99,7 @@ export async function fetchCdtRateHistory(
     const rows = (await res.json()) as RawRow[];
     if (!Array.isArray(rows)) return [];
 
-    // Una tasa por fecha de corte (la mejor de ese banco ese día).
+    // One rate per cutoff date (the bank's best one that day).
     const byDate = new Map<string, number>();
     for (const r of rows) {
       const d = r.fechacorte ?? "";

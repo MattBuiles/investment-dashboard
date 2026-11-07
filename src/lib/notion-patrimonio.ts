@@ -9,8 +9,8 @@ import {
 } from "@/lib/portfolio";
 import { isBudgetOwner } from "@/lib/splitstream";
 
-// Solo para el dueño (OWNER_EMAIL): escribe su patrimonio en SU Notion.
-// Ningún otro usuario del dashboard se sincroniza.
+// Owner only (OWNER_EMAIL): writes their net worth to THEIR OWN Notion.
+// No other dashboard user gets synced.
 const NOTION_API = "https://api.notion.com/v1";
 const NOTION_VERSION = "2025-09-03";
 
@@ -23,14 +23,14 @@ export interface Patrimonio {
   trm: number;
 }
 
-/** Valor del patrimonio en COP (CDTs con intereses causados). null si no hay tasa COP. */
+/** Net worth in COP (CDTs with accrued interest). null when there is no COP rate. */
 export function computePatrimonio(
   accounts: Account[],
   holdings: Holding[],
   fx: FxRates
 ): Patrimonio | null {
   const trm = fx.rates.COP;
-  // Sin tasa COP, convertAmount devolvería el monto sin convertir: mejor no escribir nada.
+  // With no COP rate, convertAmount would return the amount unconverted: better write nothing.
   if (!trm) return null;
   const sum = (kind: Account["kind"], fn: (a: Account) => number) =>
     accounts.filter((a) => a.kind === kind).reduce((s, a) => s + fn(a), 0);
@@ -61,7 +61,7 @@ type QueryResult = { results: { id: string }[] };
 const query = (dataSourceId: string, filter: unknown) =>
   notion<QueryResult>(`/data_sources/${dataSourceId}/query`, "POST", { filter, page_size: 10 });
 
-/** Fila del mes ("2026-10"): se crea el primer día y se sobrescribe a diario hasta que cierra el mes. */
+/** Month row ("2026-10"): created on the first day, overwritten daily until the month closes. */
 async function upsertMonth(dataSourceId: string, p: Patrimonio, today: string) {
   const month = today.slice(0, 7);
   const props = {
@@ -80,13 +80,13 @@ async function upsertMonth(dataSourceId: string, p: Patrimonio, today: string) {
   else await notion("/pages", "POST", { parent: { type: "data_source_id", data_source_id: dataSourceId }, properties: props });
 }
 
-/** Actualiza el Saldo (COP) de las filas "IBKR" y "CDTs" de la base Inversiones. */
+/** Updates the Saldo (COP) of the "IBKR" and "CDTs" rows in the Inversiones database. */
 async function updateSaldo(dataSourceId: string, name: string, value: number) {
   const [row] = (await query(dataSourceId, { property: "Name", title: { equals: name } })).results;
   if (row) await notion(`/pages/${row.id}`, "PATCH", { properties: { Saldo: { number: Math.round(value) } } });
 }
 
-/** Recorre todas las páginas de usuarios hasta encontrar al dueño. */
+/** Walks every page of users until the owner is found. */
 async function findOwner(admin: SupabaseClient<Database>) {
   const perPage = 1000;
   for (let page = 1; ; page++) {
@@ -109,7 +109,7 @@ export async function syncOwnerPatrimonio(admin: SupabaseClient<Database>): Prom
     admin.from("holdings").select("*").eq("user_id", owner.id),
     fetchFxRates(),
   ]);
-  // Un error de lectura no puede convertirse en "patrimonio 0" escrito en Notion.
+  // A read error must not turn into "net worth 0" written to Notion.
   if (accountsRes.error || holdingsRes.error) throw accountsRes.error ?? holdingsRes.error;
   const p = computePatrimonio(accountsRes.data ?? [], holdingsRes.data ?? [], fx);
   if (!p) return "no-fx";

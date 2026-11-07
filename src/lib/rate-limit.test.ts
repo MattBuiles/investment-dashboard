@@ -103,7 +103,7 @@ describe('rate-limit (feedback)', () => {
     expect(warn).toHaveBeenCalled()
   })
 
-  it('production sin env vars => fail-closed (success:false => 429)', async () => {
+  it('production without env vars => fail-closed (success:false => 429)', async () => {
     vi.stubEnv('NODE_ENV', 'production')
     const env = await import('@/lib/env')
     vi.mocked(env.getUpstashRedisUrl).mockImplementation(() => {
@@ -120,7 +120,7 @@ describe('rate-limit (feedback)', () => {
     expect(error).toHaveBeenCalled()
   })
 
-  it('production con URL no-https => fail-closed', async () => {
+  it('production with a non-https URL => fail-closed', async () => {
     vi.stubEnv('NODE_ENV', 'production')
     const env = await import('@/lib/env')
     vi.mocked(env.getUpstashRedisUrl).mockReturnValue('http://insecure.example.com')
