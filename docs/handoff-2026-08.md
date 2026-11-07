@@ -42,6 +42,10 @@ integrados por Supabase compartido y un design system común (**invest-ui**).
   transactions por conexión. Verificado en prod: sin auth → 401.
 - invest-ui se fija por **commit** en `pnpm-lock`; tras mergear en invest-ui hay que
   correr `pnpm update invest-ui` en el consumidor para bumpear.
+- **Nov 2026 — fix sync IBKR**: el cliente Flex usaba el host legado del servlet
+  v2 con `v=3` y fallaba siempre con `1001`. Ahora usa el endpoint v3
+  (`ndcdyn.../FlexWebService`) y reintenta códigos transitorios. Detalle en
+  [`docs/ibkr-flex-sync.md`](./ibkr-flex-sync.md).
 
 ### Pendientes de acción del usuario (no código)
 - IBKR: añadir sección **Trades** al Flex Query (hoy solo Open Positions) y correr
