@@ -44,3 +44,10 @@ begin
   return v_secret;
 end;
 $function$;
+
+-- Permisos reales en producción (verificados el 2026-11-07): solo postgres y
+-- service_role ejecutan esta función. Sin estas líneas, un CREATE OR REPLACE
+-- nuevo la deja con el EXECUTE por defecto para PUBLIC y cualquier usuario
+-- autenticado podría pedir el token de un broker por su connection_id.
+REVOKE EXECUTE ON FUNCTION public.cron_get_broker_secret(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.cron_get_broker_secret(uuid) TO service_role;
