@@ -1,6 +1,6 @@
-// Señales de market-agent (app hermana) leídas del Supabase compartido
-// (tabla ma_signals). Permiten mostrar la opinión del agente junto a cada
-// holding + enlazar al análisis completo.
+// market-agent signals (sister app) read from the shared Supabase
+// (ma_signals table). They let us show the agent's opinion next to each
+// holding + link to the full analysis.
 
 export interface AgentSignal {
   ticker: string;
@@ -23,9 +23,9 @@ export interface SnowflakeAxis {
   value: number;
 }
 
-// Portfolio Snowflake: promedio de los 5 ejes ponderado por valor de cada
-// holding. Solo cuentan los que tienen datos (acciones; los ETF no traen ejes).
-// Devuelve null si ningún holding aporta.
+// Portfolio Snowflake: average of the 5 axes weighted by each holding's value.
+// Only holdings with data count (stocks; ETFs carry no axes).
+// Returns null if no holding contributes.
 export function portfolioSnowflake(
   weighted: { signal: AgentSignal | undefined; weight: number }[]
 ): SnowflakeAxis[] | null {

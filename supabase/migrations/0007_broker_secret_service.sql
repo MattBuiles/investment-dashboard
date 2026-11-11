@@ -1,4 +1,4 @@
--- Fase 4 — IBKR scheduled sync.
+-- Phase 4 — IBKR scheduled sync.
 --
 -- Scheduled syncs run from a cron with the service-role key and NO user session,
 -- so they cannot use get_broker_secret() (which enforces auth.uid() = owner).

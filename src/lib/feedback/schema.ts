@@ -9,9 +9,9 @@ export const MAX_PAGE_URL_CHARS = 500;
 const IMAGE_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 export type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number];
 
-// Validar base64 ANTES de decodificar (límite por longitud de string) y
-// verificar tamaño real (decoded) ≤ 1 MB. Esto evita asignar buffers grandes
-// en memoria de un payload enorme.
+// Validate base64 BEFORE decoding (limit by string length) and check
+// the real (decoded) size ≤ 1 MB. This avoids allocating large buffers
+// in memory from a huge payload.
 const base64MaxLen = Math.ceil(MAX_DECODED_IMAGE_BYTES / 3) * 4;
 
 const imageSchema = z.object({
@@ -36,10 +36,10 @@ export const feedbackBodySchema = z.object({
 export type FeedbackBody = z.infer<typeof feedbackBodySchema>;
 
 /**
- * Detecta el tipo real de imagen por magic bytes. Devuelve el enum o null.
- * - JPEG: empieza con FF D8 FF
+ * Detects the real image type from magic bytes. Returns the enum or null.
+ * - JPEG: starts with FF D8 FF
  * - PNG:  89 50 4E 47 0D 0A 1A 0A
- * - WEBP: "RIFF" .... "WEBP" (bytes 0-3 y 8-11)
+ * - WEBP: "RIFF" .... "WEBP" (bytes 0-3 and 8-11)
  */
 export function sniffImageType(
   bytes: Uint8Array

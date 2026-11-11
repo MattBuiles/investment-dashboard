@@ -45,7 +45,7 @@ function escapeHtml(value: string): string {
 }
 
 function sanitizeFilename(filename: string): string {
-  // Quitar path traversal y caracteres no seguros para MIME headers.
+  // Strip path traversal and characters that are unsafe in MIME headers.
   const base = filename
     .replace(/[\\\/]/g, "_")
     .replace(/\.\.+/g, "_")

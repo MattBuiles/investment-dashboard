@@ -69,7 +69,7 @@ describe("cdtValueAt", () => {
     expect(cdtValueAt(cdt(), parseISO("2027-01-01"))).toBeCloseTo(1_096_000, 0);
   });
 
-  it("honors a per-CDT retefuente override in metadata (0 = exento)", () => {
+  it("honors a per-CDT retefuente override in metadata (0 = exempt)", () => {
     const exento = cdt({ metadata: { retefuente_rate: 0 } });
     expect(cdtValueAt(exento, parseISO("2026-01-01"))).toBeCloseTo(1_100_000, 0);
     const alto = cdt({ metadata: { retefuente_rate: 0.1 } });

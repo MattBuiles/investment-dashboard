@@ -66,7 +66,7 @@ export default async function OverviewPage() {
   const transactions: Transaction[] = transactionsRes.data ?? [];
   const baseCurrency = profileRes.data?.base_currency ?? "USD";
 
-  // Señales de market-agent para tus posiciones (Supabase compartido).
+  // market-agent signals for your positions (shared Supabase).
   const heldSymbols = [...new Set(holdings.map((h) => h.symbol))];
   const agentSignalsRes = heldSymbols.length
     ? await supabase.from("ma_signals").select("*").in("ticker", heldSymbols)

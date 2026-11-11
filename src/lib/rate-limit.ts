@@ -46,9 +46,9 @@ export function getFeedbackRateLimiter(): (
     token = getUpstashRedisToken();
   } catch {
     if (process.env.NODE_ENV === "production") {
-      // FAIL-CLOSED en producción: si Upstash no está configurado, no se
-      // acepta el request. Evita spam + costo de Resend si prod arrancó
-      // sin las env vars requeridas.
+      // FAIL-CLOSED in production: when Upstash is not configured, the
+      // request is not accepted. Prevents spam + Resend cost if prod started
+      // without the required env vars.
       console.error(
         "[rate-limit] PRODUCCIÓN sin UPSTASH_REDIS_REST_URL/TOKEN. Rechazando requests en \"feedback\" (fail-closed)."
       );
@@ -95,7 +95,7 @@ export function getFeedbackRateLimiter(): (
         reset: result.reset,
       };
     } catch (err) {
-      // FAIL-CLOSED: si Redis está configurado pero falla, se rechaza la petición.
+      // FAIL-CLOSED: when Redis is configured but fails, the request is rejected.
       console.error(
         `[rate-limit] Redis failure on "feedback" for "${identifier}":`,
         err

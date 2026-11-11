@@ -1,13 +1,13 @@
--- splitstream escribe su resumen sin la service role: llama a esta función con un
--- token propio. La función solo puede hacer upsert de UNA fila: la del dueño
--- configurado en ss_config. Un token filtrado no da acceso a nada más.
+-- splitstream writes its summary without the service role: it calls this function
+-- with its own token. The function can only upsert ONE row: the owner's, configured
+-- in ss_config. A leaked token grants access to nothing else.
 
 create table if not exists public.ss_config (
   id int primary key default 1 check (id = 1),
   owner_email text not null,
-  token_hash text not null -- sha256 en hex del token de splitstream
+  token_hash text not null -- hex sha256 of the splitstream token
 );
-alter table public.ss_config enable row level security; -- sin políticas: nadie la lee por la API
+alter table public.ss_config enable row level security; -- no policies: nobody reads it through the API
 revoke all on public.ss_config from anon, authenticated;
 
 create or replace function public.ss_upsert_budget(p_token text, p_row jsonb)

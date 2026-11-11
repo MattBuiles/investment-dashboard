@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IbkrConnectForm } from "./ibkr-connect-form";
 
-// Afiche para conectar una cuenta IBKR (Flex). `additional` cambia el texto
-// cuando ya existe al menos una conexión (multi-conexión).
+// Card for connecting an IBKR account (Flex). `additional` changes the wording
+// once at least one connection already exists (multi-connection).
 export function IbkrConnectCard({ additional = false }: { additional?: boolean }) {
   const [adding, setAdding] = useState(false);
 

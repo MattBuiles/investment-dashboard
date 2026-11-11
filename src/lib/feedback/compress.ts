@@ -23,8 +23,8 @@ export function validateInputFiles(files: File[]): ValidationResult {
 }
 
 /**
- * Devuelve el factor de escala necesario para encajar la dimensión mayor dentro
- * de `maxDim`. Si la imagen ya cabe, devuelve 1 (no escalar).
+ * Returns the scale factor needed to fit the largest dimension within
+ * `maxDim`. If the image already fits, returns 1 (no scaling).
  */
 export function computeScale(
   width: number,
@@ -46,9 +46,9 @@ const QUALITY_LADDER: QualityAttempt[] = [
 ];
 
 /**
- * Devuelve el siguiente intento de (calidad, maxDim) si el blob todavía excede
- * 1 MB. Devuelve null si el blob ya está dentro del límite O si se agotaron
- * los intentos (el caller debe entonces lanzar IMAGE_TOO_LARGE).
+ * Returns the next (quality, maxDim) attempt if the blob still exceeds
+ * 1 MB. Returns null if the blob is already within the limit OR the attempts
+ * ran out (the caller must then throw IMAGE_TOO_LARGE).
  */
 export function pickNextQualityAttempt(
   blobSize: number,
@@ -67,9 +67,9 @@ export type CompressedImage = {
 };
 
 /**
- * Compresión real (canvas). Diseñada para correr en el browser; aquí vive
- * para que Wave 2 la conecte. Mantenemos la lógica DOM aislada y testeable
- * por las funciones puras de arriba.
+ * Actual compression (canvas). Meant to run in the browser; it lives here
+ * so Wave 2 can wire it up. The DOM logic stays isolated and testable
+ * through the pure functions above.
  */
 export async function compressImage(file: File): Promise<CompressedImage> {
   const validation = validateInputFiles([file]);

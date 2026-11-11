@@ -12,7 +12,7 @@ const BUCKET_LABEL: Record<string, string> = {
   colchon: "Colchón",
 };
 
-/** Resumen de la quincena que escribe splitstream. RLS: solo devuelve la fila del usuario. */
+/** Biweekly summary written by splitstream. RLS: only returns the user's own row. */
 export async function BudgetCard() {
   const supabase = await createClient();
   const { data } = await supabase.from("ss_budget").select("*").maybeSingle();

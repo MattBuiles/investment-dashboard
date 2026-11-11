@@ -6,7 +6,7 @@ import {
   type AgentSignal,
 } from "@/lib/agent-signals";
 
-// Chip con la opinión de market-agent para un símbolo + enlace al análisis.
+// Chip with market-agent's opinion for a symbol + link to the analysis.
 export function AgentSignalChip({
   symbol,
   signal,

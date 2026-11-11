@@ -42,7 +42,7 @@ export function CdtForm({
     undefined
   );
 
-  // Controlados para poder prellenar la tasa según banco + plazo.
+  // Controlled inputs so the rate can be prefilled from bank + term.
   const [bank, setBank] = useState(initial?.institution ?? "");
   const [months, setMonths] = useState(
     initial?.term_months != null ? String(initial.term_months) : ""
@@ -61,20 +61,20 @@ export function CdtForm({
     }
   }, [state, onDone, initial, toast]);
 
-  // Bancos para autocompletar (de la banda a 360, la más poblada).
+  // Banks for autocomplete (taken from the 360-day band, the most populated one).
   const bankOptions = useMemo(() => {
     const list = marketRatesByTerm?.["A 360 DIAS"] ?? [];
     return [...new Set(list.map((r) => r.bank))];
   }, [marketRatesByTerm]);
 
-  // Sugerencia de tasa de mercado (porcentaje) para el banco + plazo actuales.
+  // Market rate suggestion (percentage) for the current bank + term.
   const suggestedPct = useMemo(() => {
     if (!marketRatesByTerm || !bank.trim() || !months) return null;
     const term = nearestTerm(Number(months));
     return rateForBank(marketRatesByTerm[term.desc] ?? [], bank);
   }, [marketRatesByTerm, bank, months]);
 
-  // Tasa capturada está en decimal (0.105); el mercado viene en porcentaje.
+  // Captured rate is a decimal (0.105); market rates come as a percentage.
   const currentPct = rate ? Number(rate) * 100 : null;
   const showSuggestion =
     suggestedPct != null &&

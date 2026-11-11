@@ -36,7 +36,7 @@ export default async function StocksPage() {
   const holdings: Holding[] = holdingsRes.data ?? [];
   const connections = connectionRes.data ?? [];
 
-  // Señales de market-agent (Supabase compartido) por símbolo.
+  // market-agent signals (shared Supabase), keyed by symbol.
   const symbols = [...new Set(holdings.map((h) => h.symbol))];
   const signalsRes = symbols.length
     ? await supabase.from("ma_signals").select("*").in("ticker", symbols)

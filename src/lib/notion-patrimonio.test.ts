@@ -25,7 +25,7 @@ const acc = (over: Partial<Account>): Account =>
 const fx = { base: "USD", rates: { USD: 1, COP: 4000 }, asOf: null };
 
 describe("computePatrimonio", () => {
-  it("suma IBKR en USD y en COP, y el total en COP", () => {
+  it("sums IBKR in USD and in COP, and the total in COP", () => {
     const broker = acc({ id: "b", kind: "brokerage", currency: "USD" });
     const holdings = [
       { account_id: "b", quantity: 3, last_price: 200, avg_cost: 190, currency: "USD" } as Holding,
@@ -38,7 +38,7 @@ describe("computePatrimonio", () => {
     expect(p.trm).toBe(4000);
   });
 
-  it("sin tasa COP no inventa valores", () => {
+  it("without a COP rate it invents no values", () => {
     expect(computePatrimonio([], [], { base: "USD", rates: { USD: 1 }, asOf: null })).toBeNull();
   });
 });

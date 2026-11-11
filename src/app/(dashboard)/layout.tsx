@@ -13,7 +13,7 @@ export default async function DashboardLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  // Calculado en el servidor: los no dueños no reciben ni el enlace ni la URL.
+  // Computed on the server: non-owners never get the link or the URL.
   const budgetUrl = isBudgetOwner(user?.email) ? SPLITSTREAM_URL : undefined;
 
   return (
