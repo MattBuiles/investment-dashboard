@@ -352,6 +352,10 @@ export type Database = {
         Args: { p_connection_id: string }
         Returns: string
       }
+      replace_holdings: {
+        Args: { p_account_id: string; p_rows: Json }
+        Returns: undefined
+      }
       mark_broker_sync: {
         Args: { p_connection_id: string; p_error: string; p_status: string }
         Returns: undefined

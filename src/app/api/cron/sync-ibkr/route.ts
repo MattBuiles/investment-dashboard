@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { syncConnectionAsAdmin, type SyncableConnection } from "@/lib/ibkr-sync";
+import { syncAllConnections, type SyncableConnection } from "@/lib/ibkr-sync";
 import { syncOwnerPatrimonio } from "@/lib/notion-patrimonio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
+
+// Stop starting new connections 60s before the function limit so the last
+// sync (retries included) and the Notion step can still finish.
+const SYNC_BUDGET_MS = 240_000;
 
 /**
  * Scheduled IBKR Flex sync. Triggered by Vercel Cron (see vercel.json).
@@ -37,10 +41,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 
-  const results = [];
-  for (const conn of (connections ?? []) as SyncableConnection[]) {
-    results.push(await syncConnectionAsAdmin(admin, conn));
-  }
+  const results = await syncAllConnections(
+    admin,
+    (connections ?? []) as SyncableConnection[],
+    SYNC_BUDGET_MS
+  );
 
   const synced = results.filter((r) => r.ok).length;
 

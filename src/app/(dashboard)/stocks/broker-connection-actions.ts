@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchFlexStatement, FlexError } from "@/lib/ibkr-flex";
 import {
   holdingRowsFromPositions,
+  replaceHoldings,
   syncTradesToTransactions,
 } from "@/lib/ibkr-sync";
 
@@ -167,13 +168,11 @@ export async function syncIbkrFlex(connectionId: string) {
   try {
     const { positions, trades } = await fetchFlexStatement(token, conn.flex_query_id);
 
-    await supabase.from("holdings").delete().eq("account_id", conn.account_id);
-
-    if (positions.length > 0) {
-      const rows = holdingRowsFromPositions(positions, user.id, conn.account_id);
-      const { error: insErr } = await supabase.from("holdings").insert(rows);
-      if (insErr) throw new Error(insErr.message);
-    }
+    await replaceHoldings(
+      supabase,
+      conn.account_id,
+      holdingRowsFromPositions(positions, user.id, conn.account_id)
+    );
 
     await syncTradesToTransactions(supabase, trades, user.id, conn.account_id);
 

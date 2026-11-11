@@ -94,6 +94,23 @@ export async function syncTradesToTransactions(
   return fresh.length;
 }
 
+/**
+ * Replaces an account's holdings atomically (migration 0011): one transaction,
+ * so a failed insert leaves the previous holdings untouched instead of an empty
+ * account. Works with an admin or a session client.
+ */
+export async function replaceHoldings(
+  client: Admin,
+  accountId: string,
+  rows: ReturnType<typeof holdingRowsFromPositions>
+): Promise<void> {
+  const { error } = await client.rpc("replace_holdings", {
+    p_account_id: accountId,
+    p_rows: rows,
+  });
+  if (error) throw new Error(error.message);
+}
+
 function errorMessage(e: unknown): string {
   if (e instanceof FlexError) return `${e.code}: ${e.message}`;
   if (e instanceof Error) return e.message;
@@ -118,8 +135,8 @@ async function markSync(
 
 /**
  * Sync one IBKR Flex connection using a service-role client (no user session).
- * Decrypts the Vault token via the service-only RPC, replaces the account's
- * holdings, and records sync status. Never throws — returns a per-connection
+ * Decrypts the Vault token via the service-only RPC, atomically replaces the
+ * account's holdings, and records sync status. Never throws — returns a per-connection
  * result so the cron can process every connection independently.
  */
 export async function syncConnectionAsAdmin(
@@ -145,17 +162,11 @@ export async function syncConnectionAsAdmin(
   try {
     const { positions, trades } = await fetchFlexStatement(token, conn.flex_query_id);
 
-    const { error: delErr } = await admin
-      .from("holdings")
-      .delete()
-      .eq("account_id", conn.account_id);
-    if (delErr) throw new Error(delErr.message);
-
-    if (positions.length > 0) {
-      const rows = holdingRowsFromPositions(positions, conn.user_id, conn.account_id);
-      const { error: insErr } = await admin.from("holdings").insert(rows);
-      if (insErr) throw new Error(insErr.message);
-    }
+    await replaceHoldings(
+      admin,
+      conn.account_id,
+      holdingRowsFromPositions(positions, conn.user_id, conn.account_id)
+    );
 
     await syncTradesToTransactions(admin, trades, conn.user_id, conn.account_id);
 
@@ -166,4 +177,32 @@ export async function syncConnectionAsAdmin(
     await markSync(admin, conn.id, "error", error);
     return { connectionId: conn.id, ok: false, error };
   }
+}
+
+/**
+ * Syncs every connection one after another (IBKR rate-limits per token, so no
+ * parallelism) inside a time budget: once it is spent, the remaining connections
+ * are reported as skipped instead of letting the function be killed mid-sync.
+ * A skipped connection keeps its previous status; the next run picks it up.
+ */
+export async function syncAllConnections(
+  admin: Admin,
+  connections: SyncableConnection[],
+  budgetMs: number,
+  now: () => number = Date.now
+): Promise<SyncResult[]> {
+  const startedAt = now();
+  const results: SyncResult[] = [];
+  for (const conn of connections) {
+    if (now() - startedAt >= budgetMs) {
+      results.push({
+        connectionId: conn.id,
+        ok: false,
+        error: "Skipped: time budget exceeded, it will retry on the next run.",
+      });
+      continue;
+    }
+    results.push(await syncConnectionAsAdmin(admin, conn));
+  }
+  return results;
 }

@@ -118,8 +118,23 @@ A successful `SendRequest` responds with `Status=Success` + `ReferenceCode`.
   `<code>: <message>` format. With the v3 endpoint and retries, the `1001`
   message should no longer appear; if it does so persistently, check the query's
   generation status in the portal before changing code.
-- The cron (`/api/cron/sync-ibkr`, 22:00 UTC) uses the same
-  `fetchFlexStatement`, so it inherits the endpoint and retries with no
-  additional changes.
+- The cron (`/api/cron/sync-ibkr`, 22:00 and 06:00 UTC from `vercel.json`) uses
+  the same `fetchFlexStatement`, so it inherits the endpoint and retries.
+  A second, older copy of the sync used to live only in Supabase (pg_cron job
+  `daily_ibkr_sync` -> Edge Function `sync-brokers`) and kept the legacy
+  endpoint; migration `0012` retires it so there is a single code path.
+- Holdings are replaced atomically through `replace_holdings` (migration
+  `0011`), for both the cron and the manual sync. A failed sync can no longer
+  leave an account empty.
+- The cron stops starting new connections after a 240 s budget
+  (`maxDuration` is 300 s); skipped connections keep their previous status and
+  retry on the next run.
+
+### Rollout order
+
+1. Apply `0011_replace_holdings.sql` (before deploying the code that calls it).
+2. Merge and deploy (this adds the 06:00 UTC Vercel cron).
+3. Apply `0012_unschedule_supabase_ibkr_cron.sql`, then delete the Edge Function
+   `sync-brokers` in Supabase.
 - If IBKR changes hosts again, update only `FLEX_BASE` in
   `src/lib/ibkr-flex.ts`.
