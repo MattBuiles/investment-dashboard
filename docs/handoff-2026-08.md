@@ -36,7 +36,7 @@ repos integrated through a shared Supabase project and a common design system
 ### Relevant architecture / security
 - **Single brain**: market-agent computes score/snowflake/fair value → `ma_signals`;
   the dashboard only displays them. Shared tables are prefixed `ma_*`.
-- **Scheduled IBKR sync**: Vercel cron (22:00 UTC) → `/api/cron/sync-ibkr`
+- **Scheduled IBKR sync**: Vercel cron (22:00 and 06:00 UTC) → `/api/cron/sync-ibkr`
   (fail-closed via `CRON_SECRET`) → service-role client → RPC
   `get_broker_secret_service` (SECURITY DEFINER, executable **only** by
   service_role, audited) decrypts the Flex token from Vault → upsert holdings +
@@ -52,7 +52,7 @@ repos integrated through a shared Supabase project and a common design system
 - IBKR: add the **Trades** section to the Flex Query (currently Open Positions
   only) and run a sync → populates `transactions`.
 - Confirm the scheduled sync end-to-end with the real `CRON_SECRET` (or wait for
-  the 22:00 UTC run). Note: `CRON_SECRET` must be plain ASCII (it goes in a header).
+  the next 22:00 or 06:00 UTC run). Note: `CRON_SECRET` must be plain ASCII (it goes in a header).
 
 ---
 

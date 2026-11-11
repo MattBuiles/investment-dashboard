@@ -124,10 +124,11 @@ retry policy and manual `curl` checks.
 
 ### Scheduled sync
 
-`vercel.json` runs `/api/cron/sync-ibkr` every day at 22:00 UTC. Vercel sends
-`Authorization: Bearer $CRON_SECRET`. The route uses the service-role client,
-decrypts each connection token through Vault, replaces holdings, appends new
-trades and records `last_sync_status` / `last_sync_error`.
+`vercel.json` runs `/api/cron/sync-ibkr` every day at 22:00 and 06:00 UTC. Vercel
+sends `Authorization: Bearer $CRON_SECRET`. The route uses the service-role
+client, decrypts each connection token through Vault, atomically replaces
+holdings (`replace_holdings`), appends new trades and records
+`last_sync_status` / `last_sync_error`.
 
 To trigger it manually:
 
